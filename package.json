@@ -12,14 +12,22 @@
     "postbuild": "next-sitemap"
   },
   "dependencies": {
+    "@meluiz/memojs": "^1.0.2",
     "@next/font": "^13.1.1",
+    "axios": "^1.2.2",
+    "cheerio": "^1.0.0-rc.12",
+    "md5": "^2.3.0",
     "next": "^13.1.1",
     "next-seo": "^5.15.0",
     "next-sitemap": "^3.1.44",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "slugify": "^1.6.5",
+    "urijs": "^1.19.11"
   },
   "devDependencies": {
+    "@types/md5": "^2.3.2",
+    "@types/urijs": "^1.19.19",
     "@types/node": "^18.11.18",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.10",

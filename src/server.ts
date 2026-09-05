@@ -10,6 +10,7 @@ import { logger } from '#plugin/logger';
 import { rateLimit } from '#plugin/rate-limit';
 import { requestId } from '#plugin/request-id';
 import { health } from '#routes/health';
+import { metadata } from '#routes/metadata';
 
 const hono = new Hono<ServerContext>();
 
@@ -28,5 +29,6 @@ hono.notFound(onNotFound);
 /* ------- routes ------- */
 
 hono.route('/health', health);
+hono.route('/metadata', metadata);
 
 export default hono;

@@ -10,7 +10,7 @@
     "format": "biome format --write"
   },
   "imports": {
-    "#controller/*": "./src/controllers/*.js",
+    "#controller/*": "./src/controllers/*/index.js",
     "#middleware/*": "./src/middlewares/*.js",
     "#plugin/*": "./src/plugins/*.js",
     "#routes/*": "./src/routes/*.js",

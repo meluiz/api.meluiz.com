@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "types": ["bun"],
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "skipLibCheck": true,
+    "module": "Preserve",
+    "noImplicitOverride": true,
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "moduleResolution": "Bundler",
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,
+    "allowImportingTsExtensions": true
+  }
+}

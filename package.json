@@ -10,11 +10,11 @@
     "format": "biome format --write"
   },
   "imports": {
-    "#controller/*": "./src/controllers/*/index.js",
-    "#middleware/*": "./src/middlewares/*.js",
-    "#plugin/*": "./src/plugins/*.js",
-    "#routes/*": "./src/routes/*.js",
-    "#util/*": "./src/utils/*.js"
+    "#controller/*": "./src/controllers/*/index.ts",
+    "#middleware/*": "./src/middlewares/*.ts",
+    "#plugin/*": "./src/plugins/*.ts",
+    "#routes/*": "./src/routes/*.ts",
+    "#util/*": "./src/utils/*.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",

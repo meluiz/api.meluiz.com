@@ -1,61 +1,65 @@
 import parse from 'node-html-parser';
 
-import { BadGatewayError, BadRequestError } from '#util/errors';
+import { BadGatewayError, ServerError } from '#util/errors';
 
 import { extractMetadata } from './extractor';
+import { assertSafeRemoteUrl, type HostResolver } from './url-policy';
 
 const TIMEOUT = 4_000;
 const MAX_BYTES = 60_000;
 const MAX_REDIRECTS = 3;
-
-const isPrivateHost = (hostname: string) => {
-  return /^(localhost|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(
-    hostname,
-  );
-};
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 const charsetFromContentType = (contentType: string) => {
   const match = /charset=([^;]+)/i.exec(contentType);
-
-  return (match?.[1]?.trim() || 'utf-8') as Bun.Encoding;
+  return match?.[1]?.trim().replace(/^['"]|['"]$/g, '') || 'utf-8';
 };
+
+export type DocumentFetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
 export interface FetchDocumentOptions {
   timeout?: number;
   maxBytes?: number;
+  signal?: AbortSignal;
   maxRedirects?: number;
+  fetcher?: DocumentFetcher;
+  resolveHost?: HostResolver;
 }
 
 export const fetchDocument = async (input: string, options: FetchDocumentOptions = {}) => {
-  const { maxBytes = MAX_BYTES, timeout = TIMEOUT, maxRedirects = MAX_REDIRECTS } = options;
+  const {
+    fetcher = globalThis.fetch,
+    maxBytes = MAX_BYTES,
+    maxRedirects = MAX_REDIRECTS,
+    resolveHost,
+    signal: requestSignal,
+    timeout = TIMEOUT,
+  } = options;
+
   const controller = new AbortController();
   const timing = setTimeout(() => controller.abort(), timeout);
+
+  const signal = requestSignal
+    ? AbortSignal.any([controller.signal, requestSignal])
+    : controller.signal;
 
   try {
     let url = input;
     let response: Response;
 
     for (let hop = 0; ; hop += 1) {
-      const parsed = new URL(url);
-
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        throw new BadRequestError('The URL protocol is not supported');
-      }
-
-      if (isPrivateHost(parsed.hostname)) {
-        throw new BadRequestError('The URL resolves to a disallowed host');
-      }
+      await assertSafeRemoteUrl(url, resolveHost, signal);
 
       response = await fetch(url, {
-        signal: controller.signal,
+        signal: signal,
         redirect: 'manual',
         headers: {
           'user-agent': 'facebookexternalhit/1.1',
-          accept: 'text/html',
+          accept: 'text/html, application/xhtml+xml;q=0.9',
         },
       });
 
-      const isRedirect = response.status >= 300 && response.status < 400;
+      const isRedirect = REDIRECT_STATUSES.has(response.status);
 
       if (!isRedirect) {
         break;
@@ -71,7 +75,11 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
         throw new BadGatewayError('Too many redirects were followed');
       }
 
-      url = new URL(location, url).toString();
+      try {
+        url = new URL(location, url).toString();
+      } catch (error) {
+        throw new BadGatewayError('The resource returned an invalid redirect', error);
+      }
     }
 
     if (!response.ok) {
@@ -80,7 +88,7 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
 
     const contentType = response.headers.get('content-type') ?? '';
 
-    if (!contentType.includes('text/html')) {
+    if (!/^(text\/html|application\/xhtml\+xml)(?:\s*;|$)/i.test(contentType)) {
       throw new BadGatewayError('The resource is not an HTML document');
     }
 
@@ -89,7 +97,7 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
     }
 
     const reader = response.body.getReader();
-    const decoder = new TextDecoder(charsetFromContentType(contentType));
+    const decoder = new TextDecoder(charsetFromContentType(contentType) as Bun.Encoding);
 
     let html = '';
     let bytes = 0;
@@ -101,6 +109,12 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
         if (value) {
           bytes += value.length;
           html += decoder.decode(value, { stream: true });
+
+          const remaining = maxBytes - bytes;
+          const chunk = value.byteLength > remaining ? value.subarray(0, remaining) : value;
+
+          bytes += chunk.byteLength;
+          html += decoder.decode(chunk, { stream: true });
         }
 
         // Read the whole document (up to maxBytes) — this extractor needs more
@@ -117,18 +131,25 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
 
     return { root: parse(html), html, url };
   } catch (error) {
-    // The abort signal surfaces as a generic error — translate it
-    if (error instanceof Error) {
-      throw new BadGatewayError('The resource took too long to respond', error.message);
+    if (error instanceof ServerError) {
+      throw error;
     }
 
-    throw error;
+    if (controller.signal.aborted) {
+      throw new BadGatewayError('The resource took too long to respond', error);
+    }
+
+    if (requestSignal?.aborted) {
+      throw new BadGatewayError('The request was cancelled', error);
+    }
+
+    throw new BadGatewayError('The resource could not be fetched', error);
   } finally {
     clearTimeout(timing);
   }
 };
 
-export const getMetadataByUrl = async (url: string) => {
-  const { root, url: resolvedUrl } = await fetchDocument(url);
+export const getMetadataByUrl = async (url: string, options: FetchDocumentOptions = {}) => {
+  const { root, url: resolvedUrl } = await fetchDocument(url, options);
   return extractMetadata(root, { resolvedUrl, requestedUrl: url });
 };

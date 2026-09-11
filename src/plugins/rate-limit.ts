@@ -10,15 +10,17 @@ const WINDOW_DURATION = WINDOW_SECONDS * 1000;
 export const rateLimit = defineConfig({
   limit: REQUEST_LIMIT,
   windowMs: WINDOW_DURATION,
+  standardHeaders: 'draft-7',
+  skip: (ctx) => ctx.req.path === '/health',
   keyGenerator: (ctx) => {
     const connection = getVercelConnInfo(ctx);
-    return connection.remote.address ?? crypto.randomUUID();
+    return connection.remote.address ?? 'unknown';
   },
   handler: (ctx) => {
     ctx.header('Retry-After', String(WINDOW_SECONDS));
 
     throw new TooManyRequestsError('Too many requests were sent', {
-      retryAfter: WINDOW_DURATION,
+      retryAfterSeconds: WINDOW_SECONDS,
     });
   },
 });

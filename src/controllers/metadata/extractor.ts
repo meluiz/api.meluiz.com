@@ -35,8 +35,6 @@ export const extractMetadata = (
       crawler: extractCrawler(ctx),
     };
   } catch (error) {
-    throw new InternalServerError(`Failed to parse metadata from ${requestedUrl}`, {
-      cause: error,
-    });
+    throw new InternalServerError(`Failed to parse metadata`, error);
   }
 };

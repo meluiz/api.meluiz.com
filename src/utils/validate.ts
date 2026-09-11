@@ -14,9 +14,7 @@ export const validate = <T extends ZodType>(target: Target, schema: T) => {
     if (!result.success) {
       const { fieldErrors } = z.flattenError(result.error);
 
-      throw new UnprocessableError(`The provided ${target} is invalid`, {
-        details: fieldErrors,
-      });
+      throw new UnprocessableError(`The provided ${target} is invalid`, fieldErrors);
     }
 
     return result.data;

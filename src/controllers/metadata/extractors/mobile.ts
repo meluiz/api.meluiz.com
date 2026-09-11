@@ -1,5 +1,5 @@
-import type { ExtractorContext } from './context';
 import type { Mobile } from '../types';
+import type { ExtractorContext } from './context';
 
 export const extractMobile = (ctx: ExtractorContext): Mobile => {
   const { attr, fromAll, get, resolve } = ctx;

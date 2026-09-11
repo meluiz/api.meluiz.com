@@ -1,5 +1,5 @@
-import type { ExtractorContext } from './context';
 import type { Author, General } from '../types';
+import type { ExtractorContext } from './context';
 
 const extractAuthors = (ctx: ExtractorContext): Author[] => {
   const { fromAll } = ctx;

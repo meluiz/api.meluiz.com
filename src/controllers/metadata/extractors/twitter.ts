@@ -1,5 +1,5 @@
-import type { ExtractorContext } from './context';
 import type { Twitter } from '../types';
+import type { ExtractorContext } from './context';
 
 export const extractTwitter = (ctx: ExtractorContext): Twitter => {
   const { attr, resolve } = ctx;

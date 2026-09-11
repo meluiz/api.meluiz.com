@@ -77,8 +77,12 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
 
       try {
         url = new URL(location, url).toString();
-      } catch (error) {
-        throw new BadGatewayError('The resource returned an invalid redirect', error);
+      } catch (cause) {
+        throw new BadGatewayError(
+          'The resource returned an invalid redirect',
+          undefined,
+          cause,
+        );
       }
     }
 
@@ -130,20 +134,20 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
     }
 
     return { root: parse(html), html, url };
-  } catch (error) {
-    if (error instanceof ServerError) {
-      throw error;
+  } catch (cause) {
+    if (cause instanceof ServerError) {
+      throw cause;
     }
 
     if (controller.signal.aborted) {
-      throw new BadGatewayError('The resource took too long to respond', error);
+      throw new BadGatewayError('The resource took too long to respond', undefined, cause);
     }
 
     if (requestSignal?.aborted) {
-      throw new BadGatewayError('The request was cancelled', error);
+      throw new BadGatewayError('The request was cancelled', undefined, cause);
     }
 
-    throw new BadGatewayError('The resource could not be fetched', error);
+    throw new BadGatewayError('The resource could not be fetched', undefined, cause);
   } finally {
     clearTimeout(timing);
   }

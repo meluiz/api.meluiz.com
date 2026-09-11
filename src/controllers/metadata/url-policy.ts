@@ -114,8 +114,8 @@ export const assertSafeRemoteUrl = async (
 
   try {
     url = new URL(input);
-  } catch (error) {
-    throw new BadRequestError('The URL is not valid', error);
+  } catch (cause) {
+    throw new BadRequestError('The URL is not valid', undefined, cause);
   }
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -146,12 +146,12 @@ export const assertSafeRemoteUrl = async (
 
   try {
     addresses = await resolveWithSignal(resolver, hostname, signal);
-  } catch (error) {
+  } catch (cause) {
     if (signal?.aborted) {
-      throw error;
+      throw cause;
     }
 
-    throw new BadGatewayError('The resource host could not be resolved', error);
+    throw new BadGatewayError('The resource host could not be resolved', undefined, cause);
   }
 
   if (addresses.length === 0 || addresses.some(({ address }) => isBlockedAddress(address))) {

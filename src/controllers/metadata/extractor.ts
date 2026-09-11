@@ -34,7 +34,7 @@ export const extractMetadata = (
       mobile: extractMobile(ctx),
       crawler: extractCrawler(ctx),
     };
-  } catch (error) {
-    throw new InternalServerError(`Failed to parse metadata`, error);
+  } catch (cause) {
+    throw new InternalServerError(`Failed to parse metadata`, undefined, cause);
   }
 };

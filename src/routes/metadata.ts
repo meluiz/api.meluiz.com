@@ -15,7 +15,7 @@ export const metadata = new Hono<ServerContext>();
 metadata.get('/', validate('query', GetMetadataQuery), async (ctx) => {
   const { url } = ctx.req.valid('query');
 
-  const payload = await getMetadataByUrl(url);
+  const payload = await getMetadataByUrl(url, { signal: ctx.req.raw.signal });
 
   return toResponse(ctx, {
     status: 200,

@@ -50,7 +50,7 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
     for (let hop = 0; ; hop += 1) {
       await assertSafeRemoteUrl(url, resolveHost, signal);
 
-      response = await fetch(url, {
+      response = await fetcher(url, {
         signal: signal,
         redirect: 'manual',
         headers: {
@@ -111,9 +111,9 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
         const { done, value } = await reader.read();
 
         if (value) {
-          bytes += value.length;
-          html += decoder.decode(value, { stream: true });
-
+          // Count and decode each chunk exactly once. Truncate the tail chunk
+          // to the byte budget before decoding so `bytes` and `html` stay in
+          // sync with what was actually kept.
           const remaining = maxBytes - bytes;
           const chunk = value.byteLength > remaining ? value.subarray(0, remaining) : value;
 

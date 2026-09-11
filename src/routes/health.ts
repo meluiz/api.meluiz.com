@@ -7,6 +7,8 @@ import { toResponse } from '#util/http';
 export const health = new Hono<ServerContext>();
 
 health.get('/', (ctx) => {
+  ctx.header('Cache-Control', 'no-store');
+
   return toResponse(ctx, {
     status: 200,
     data: {

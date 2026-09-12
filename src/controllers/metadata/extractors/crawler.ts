@@ -6,12 +6,14 @@ export const extractCrawler = (ctx: ExtractorContext): Crawler => {
 
   return {
     robots: meta('robots'),
-    bingbot: meta('bingbot'),
     referrer: meta('referrer'),
+
+    yandex: meta('yandex'),
+    bingbot: meta('bingbot'),
+    baiduspider: meta('baiduspider'),
+
     googlebot: meta('googlebot'),
     googlebotNews: meta('googlebot-news'),
     googlebotImage: meta('googlebot-image'),
-    yandex: meta('yandex'),
-    baiduspider: meta('baiduspider'),
   };
 };

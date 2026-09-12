@@ -11,6 +11,7 @@ export const extractMobile = (ctx: ExtractorContext): Mobile => {
 
   return {
     mobileWebAppCapable: meta('mobile-web-app-capable'),
+
     appleTouchIcons: links('apple-touch-icon').map(toTouchIcon),
     appleMobileWebAppTitle: meta('apple-mobile-web-app-title'),
     appleMobileWebAppCapable: meta('apple-mobile-web-app-capable'),

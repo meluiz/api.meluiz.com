@@ -16,12 +16,9 @@ export const GetMetadataQuery = z.object({ url: UrlSchema });
 export const GetMetadataAnalysisQuery = GetMetadataQuery.extend({
   mode: z.enum(['quick', 'deep']).default('quick'),
 });
-export const GetFaviconQuery = z
-  .object({
-    url: UrlSchema,
-    size: z.coerce.number().int().min(16).max(256).optional(),
-  })
-  .transform(({ size, url }) => ({ size: size ?? 16, url }));
+export const GetFaviconQuery = GetMetadataQuery.extend({
+  size: z.coerce.number().int().min(16).max(256).default(16),
+});
 
 export const metadata = new Hono<ServerContext>();
 

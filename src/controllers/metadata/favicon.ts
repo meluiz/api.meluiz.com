@@ -49,6 +49,8 @@ interface CandidateOptions extends RemoteResourceOptions {
   resourceTimeout: number;
 }
 
+/* ///////////////////////////////////////////////// */
+
 const buildGoogleFaviconUrl = (url: string) => {
   const endpoint = new URL(GOOGLE_FAVICON_ENDPOINT);
   endpoint.searchParams.set('domain_url', new URL('/', url).toString());
@@ -263,6 +265,7 @@ const tryCandidate = async (
       }
 
       if (isIco(bytes)) {
+        console.log('ico');
         return new Response(bytes, {
           status: 200,
           headers: buildHeaders('image/x-icon', bytes.byteLength, source, source !== 'google'),
@@ -270,6 +273,7 @@ const tryCandidate = async (
       }
 
       if (isSvg(bytes)) {
+        console.log('svg');
         return new Response(bytes, {
           status: 200,
           headers: buildHeaders('image/svg+xml', bytes.byteLength, source, source !== 'google'),
@@ -354,6 +358,8 @@ const conventionalCandidates = (url: string): IconCandidate[] => {
   }));
 };
 
+/* ///////////////////////////////////////////////// */
+
 /** Resolve, validate, normalize, and proxy the best favicon available for a website. */
 export const getFaviconByUrl = async (
   url: string,
@@ -371,17 +377,20 @@ export const getFaviconByUrl = async (
     signal: requestSignal,
     timeout = REQUEST_TIMEOUT,
   } = options;
+
   const controller = new AbortController();
   const timing = setTimeout(() => controller.abort(), timeout);
+
   const signal = requestSignal
     ? AbortSignal.any([controller.signal, requestSignal])
     : controller.signal;
+
   const resourceOptions: RemoteResourceOptions = {
-    accept: 'image/avif,image/webp,image/svg+xml,image/*;q=0.9,*/*;q=0.1',
-    fetcher,
-    maxRedirects,
-    resolveHost,
     signal,
+    fetcher,
+    resolveHost,
+    maxRedirects,
+    accept: 'image/avif,image/webp,image/svg+xml,image/*;q=0.9,*/*;q=0.1',
   };
 
   try {
@@ -392,11 +401,12 @@ export const getFaviconByUrl = async (
     try {
       const document = await fetchDocument(url, {
         ...documentOptions,
-        fetcher: documentOptions?.fetcher ?? fetcher,
-        resolveHost,
         signal,
+        resolveHost,
+        fetcher: documentOptions?.fetcher ?? fetcher,
         timeout: documentOptions?.timeout ?? DOCUMENT_TIMEOUT,
       });
+
       resolvedUrl = document.url;
 
       const candidates = extractFaviconCandidates(document.root, resolvedUrl);

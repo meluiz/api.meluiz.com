@@ -5,8 +5,8 @@ import { BadGatewayError, ServerError } from '#util/errors';
 import { extractMetadata } from './extractor';
 import { assertSafeRemoteUrl, type HostResolver } from './url-policy';
 
-const TIMEOUT = 4_000;
-const MAX_BYTES = 60_000;
+const TIMEOUT = 8_000;
+const MAX_BYTES = 512_000;
 const MAX_REDIRECTS = 3;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
@@ -46,6 +46,7 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
   try {
     let url = input;
     let response: Response;
+    const redirects: string[] = [];
 
     for (let hop = 0; ; hop += 1) {
       await assertSafeRemoteUrl(url, resolveHost, signal);
@@ -77,6 +78,7 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
 
       try {
         url = new URL(location, url).toString();
+        redirects.push(url);
       } catch (cause) {
         throw new BadGatewayError(
           'The resource returned an invalid redirect',
@@ -105,6 +107,7 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
 
     let html = '';
     let bytes = 0;
+    let truncated = false;
 
     try {
       while (true) {
@@ -117,6 +120,10 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
           const remaining = maxBytes - bytes;
           const chunk = value.byteLength > remaining ? value.subarray(0, remaining) : value;
 
+          if (value.byteLength > remaining) {
+            truncated = true;
+          }
+
           bytes += chunk.byteLength;
           html += decoder.decode(chunk, { stream: true });
         }
@@ -125,6 +132,7 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
         // than the <head>: favicons, apple-touch-icons and canonical links may
         // sit outside it, so no </head> early-cut here.
         if (done || bytes >= maxBytes) {
+          truncated ||= !done && bytes >= maxBytes;
           break;
         }
       }
@@ -133,7 +141,17 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
       await reader.cancel().catch(() => {});
     }
 
-    return { root: parse(html), html, url };
+    return {
+      root: parse(html),
+      html,
+      url,
+      status: response.status,
+      headers: Object.fromEntries(response.headers.entries()),
+      redirects,
+      bytes,
+      truncated,
+      contentType,
+    };
   } catch (cause) {
     if (cause instanceof ServerError) {
       throw cause;

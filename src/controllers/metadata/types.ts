@@ -129,6 +129,7 @@ export interface MetadataDocument {
 export interface Metadata {
   requestedUrl: string;
   resolvedUrl: string;
+  document?: MetadataDocument;
   general: General;
   opengraph: Opengraph;
   twitter: Twitter;

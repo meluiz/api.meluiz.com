@@ -22,7 +22,7 @@ export const parseHttpUrl = (value?: string | null) => {
   }
 };
 
-export const getNormalizedUrl = (url: string): string | null => {
+export const getNormalizedUrl = (url: string) => {
   let href = url.trim();
 
   if (href.length === 0) {

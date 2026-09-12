@@ -4,6 +4,7 @@
   "workspaces": {
     "": {
       "dependencies": {
+        "@motiro/guard": "^0.1.2",
         "@motiro/string": "^0.1.3",
         "envin": "^1.2.0",
         "hono": "^4.13.7",
@@ -41,6 +42,8 @@
     "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.5.12", "", { "os": "win32", "cpu": "arm64" }, "sha512-b9vtoZFsuZt1pdjNwJvXl0f+BpayRzV008uS2+JpmwIKdSE2qdu4A/l04FESwLoou5g2E/Qlec0xwJydZplH+A=="],
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.12", "", { "os": "win32", "cpu": "x64" }, "sha512-B1R/l+CwEpKFSuqiwePzPNRk1EiJN8kc0UhdafNz6MZN9v5OFP9HYP1irptvWzHrwVI4blVNGMbxc5zt70m3IA=="],
+
+    "@motiro/guard": ["@motiro/guard@0.1.2", "", {}, "sha512-1GDsAtV+QYlgUxGhcjkFIxJRlFV9A8MuYtdHRPmBOr2TyD5n07mJOYofCEAoijIzyKZY+WGT0Uct4iDe7F96dw=="],
 
     "@motiro/string": ["@motiro/string@0.1.3", "", {}, "sha512-H4QDdhpbFG5+GG0/1tBa115gIcTexfzD7uKoLfp2WGhJyyz1iCuNr6oryvDpU5EoTflJov2rNkM8mDtTdP39Gg=="],
 

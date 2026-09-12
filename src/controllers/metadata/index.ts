@@ -22,7 +22,9 @@ export type {
   Twitter,
   TwitterLabel,
 } from './types';
+export type { HostResolver, ResolvedAddress } from './url-policy';
 
 export { extractMetadata } from './extractor';
 export { getFaviconByUrl } from './favicon';
 export { fetchDocument, getMetadataByUrl } from './service';
+export { assertSafeRemoteUrl, resolveHost } from './url-policy';

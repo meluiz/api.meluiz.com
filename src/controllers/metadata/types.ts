@@ -20,6 +20,36 @@ export interface TouchIcon {
   href?: string;
 }
 
+export interface Alternate {
+  href?: string;
+  hrefLang?: string;
+  media?: string;
+  type?: string;
+  title?: string;
+}
+
+export interface StructuredData {
+  count: number;
+  valid: number;
+  invalid: number;
+  types: string[];
+  issues: StructuredDataIssue[];
+}
+
+export interface StructuredDataIssue {
+  type?: string;
+  property?: string;
+  severity: 'error' | 'warning';
+  message: string;
+}
+
+export interface SiteVerification {
+  google?: string;
+  bing?: string;
+  yandex?: string;
+  pinterest?: string;
+}
+
 export interface OpengraphImage {
   url?: string;
   alt?: string;
@@ -33,6 +63,11 @@ export interface General {
   title?: string;
   description?: string;
   url?: string;
+  baseUrl?: string;
+  previous?: string;
+  next?: string;
+  language?: string;
+  charset?: string;
   robots?: string;
   keywords?: string;
   generator?: string;
@@ -43,8 +78,11 @@ export interface General {
   applicationName?: string;
   manifest?: string;
   authors?: Author[];
+  alternates?: Alternate[];
   favicons?: Favicon[];
   themeColors?: ThemeColor[];
+  verification?: SiteVerification;
+  structuredData?: StructuredData;
 }
 
 export interface Opengraph {

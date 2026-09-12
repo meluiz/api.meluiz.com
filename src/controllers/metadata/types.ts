@@ -114,7 +114,11 @@ export interface Mobile {
 export interface Crawler {
   robots?: string;
   googlebot?: string;
+  googlebotNews?: string;
+  googlebotImage?: string;
   bingbot?: string;
+  yandex?: string;
+  baiduspider?: string;
   referrer?: string;
 }
 

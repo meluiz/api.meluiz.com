@@ -2,12 +2,16 @@ import type { Crawler } from '../types';
 import type { ExtractorContext } from './context';
 
 export const extractCrawler = (ctx: ExtractorContext): Crawler => {
-  const { attr } = ctx;
+  const { meta } = ctx;
 
   return {
-    robots: attr('meta[name=robots]', 'content'),
-    bingbot: attr('meta[name=bingbot]', 'content'),
-    referrer: attr('meta[name=referrer]', 'content'),
-    googlebot: attr('meta[name=googlebot]', 'content'),
+    robots: meta('robots'),
+    bingbot: meta('bingbot'),
+    referrer: meta('referrer'),
+    googlebot: meta('googlebot'),
+    googlebotNews: meta('googlebot-news'),
+    googlebotImage: meta('googlebot-image'),
+    yandex: meta('yandex'),
+    baiduspider: meta('baiduspider'),
   };
 };

@@ -1,4 +1,4 @@
-export type { IconCandidate, IconFormat } from './favicon';
+export type { IconCandidate, IconFormat, IconPurpose, IconSource } from './favicon';
 
 export { extractCrawler } from './crawler';
 export {

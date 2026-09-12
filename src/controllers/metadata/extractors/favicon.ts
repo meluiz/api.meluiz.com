@@ -1,167 +1,261 @@
 import type { HTMLElement } from 'node-html-parser';
 
+import { createExtractorContext } from './context';
+
 /* ///////////////////////////////////////////////// */
 
-// rel tokens we treat as icon declarations. mask-icon is monochrome (Safari
-// pinned tabs), so we drop it entirely as a display favicon.
-const ICON_RELS = new Set([
-  'icon',
-  'shortcut icon',
-  'apple-touch-icon',
-  'apple-touch-icon-precomposed',
-]);
-
-// Assumed edge (px) for candidates that declare no `sizes`. Apple-touch icons
-// are conventionally 180; a bare icon/.ico is usually small.
-const ASSUMED_APPLE_SIZE = 180;
-const ASSUMED_DEFAULT_SIZE = 32;
-
-const SVG_SIZE = Number.POSITIVE_INFINITY;
-
 export type IconFormat = 'svg' | 'ico' | 'raster';
+export type IconPurpose = 'any' | 'maskable' | 'monochrome';
+export type IconSource = 'html' | 'manifest' | 'conventional' | 'google';
 
 export interface IconCandidate {
   href: string;
   size: number;
   format: IconFormat;
+  type?: string;
+  media?: string;
+  purposes?: IconPurpose[];
+  source?: IconSource;
 }
 
+/* ///////////////////////////////////////////////// */
+
+const ASSUMED_APPLE_SIZE = 180;
+const ASSUMED_DEFAULT_SIZE = 32;
+const SCALABLE_SIZE = Number.POSITIVE_INFINITY;
+const ICON_PURPOSES = new Set<IconPurpose>(['any', 'maskable', 'monochrome']);
+
+/* ///////////////////////////////////////////////// */
+
+const tokenize = (value: string | undefined) => {
+  return value?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? [];
+};
+
 const parseSizes = (sizes: string | undefined) => {
-  if (!sizes) {
-    return null;
+  const tokens = tokenize(sizes);
+
+  if (tokens.includes('any')) {
+    return SCALABLE_SIZE;
   }
 
-  if (/\bany\b/i.test(sizes)) {
-    return SVG_SIZE;
-  }
+  let largestSquare = 0;
 
-  let largest = 0;
+  for (const token of tokens) {
+    const match = /^(\d+)x(\d+)$/i.exec(token);
 
-  for (const token of sizes.trim().split(/\s+/)) {
-    const edge = Number.parseInt(token.split(/x/i)[0] ?? '', 10);
+    if (!match) {
+      continue;
+    }
 
-    if (Number.isFinite(edge) && edge > largest) {
-      largest = edge;
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+
+    if (width === height && width > largestSquare) {
+      largestSquare = width;
     }
   }
 
-  return largest > 0 ? largest : null;
+  return largestSquare > 0 ? largestSquare : null;
 };
 
-// Classify by declared type first, then by URL extension. Drives whether the
-// caller can resize it (raster) or must serve it as-is (svg/ico).
 const classifyFormat = (href: string, type: string | undefined): IconFormat => {
-  const value = `${type ?? ''} ${href}`.toLowerCase();
+  const dataMime = /^data:([^;,]+)/i.exec(href)?.[1];
+  const mime = (type ?? dataMime)?.split(';')[0]?.trim().toLowerCase();
 
-  if (value.includes('svg')) {
+  if (mime === 'image/svg+xml') {
     return 'svg';
   }
 
-  if (value.includes('ico') || value.includes('icon')) {
+  if (mime === 'image/x-icon' || mime === 'image/vnd.microsoft.icon') {
+    return 'ico';
+  }
+
+  let extension = '';
+
+  try {
+    const pathname = new URL(href).pathname;
+    extension = pathname.slice(pathname.lastIndexOf('.') + 1).toLowerCase();
+  } catch {
+    // Invalid candidates are discarded by the caller; format remains a best effort.
+  }
+
+  if (extension === 'svg' || extension === 'svgz') {
+    return 'svg';
+  }
+
+  if (extension === 'ico' || extension === 'cur') {
     return 'ico';
   }
 
   return 'raster';
 };
 
-// Rank candidates for a target size: SVG first (scales losslessly), then the
-// largest raster/ico (most pixels to downscale from, mirroring Google). We
-// prefer the largest rather than the closest because the caller now resizes.
-export const rankCandidates = (candidates: IconCandidate[]) => {
-  return [...candidates].sort((a, b) => {
-    const aSvg = a.format === 'svg';
-    const bSvg = b.format === 'svg';
+const resolveHttpUrl = (value: string | undefined, base: string) => {
+  if (!value) {
+    return undefined;
+  }
 
-    if (aSvg !== bSvg) {
-      return aSvg ? -1 : 1;
+  const normalized = value.trim();
+
+  if (/^data:image\//i.test(normalized)) {
+    return normalized;
+  }
+
+  try {
+    const url = new URL(normalized, base);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const purposesFrom = (value: unknown): IconPurpose[] => {
+  if (typeof value !== 'string') {
+    return ['any'];
+  }
+
+  return tokenize(value).filter((purpose): purpose is IconPurpose => {
+    return ICON_PURPOSES.has(purpose as IconPurpose);
+  });
+};
+
+const deduplicate = (candidates: IconCandidate[]) => {
+  const unique = new Map<string, IconCandidate>();
+
+  for (const candidate of candidates) {
+    const current = unique.get(candidate.href);
+
+    if (!current) {
+      unique.set(candidate.href, {
+        ...candidate,
+        purposes: candidate.purposes ? [...candidate.purposes] : undefined,
+      });
+      continue;
     }
 
-    if (a.size !== b.size) {
-      return b.size - a.size;
+    current.size = Math.max(current.size, candidate.size);
+    current.type ??= candidate.type;
+    current.media ??= candidate.media;
+    current.purposes = [
+      ...new Set([...(current.purposes ?? []), ...(candidate.purposes ?? [])]),
+    ];
+  }
+
+  return [...unique.values()];
+};
+
+const purposePriority = (purposes: IconPurpose[] | undefined) => {
+  if (!purposes || purposes.includes('any')) {
+    return 0;
+  }
+
+  return purposes.includes('maskable') ? 1 : 2;
+};
+
+const sizeDistance = (size: number, targetSize: number) => {
+  if (size === SCALABLE_SIZE) {
+    return 0;
+  }
+
+  return size >= targetSize ? size - targetSize : 10_000 + targetSize - size;
+};
+
+/* ///////////////////////////////////////////////// */
+
+export const rankCandidates = (
+  candidates: IconCandidate[],
+  targetSize = ASSUMED_DEFAULT_SIZE,
+) => {
+  return deduplicate(candidates).sort((left, right) => {
+    const purposeDifference = purposePriority(left.purposes) - purposePriority(right.purposes);
+
+    if (purposeDifference !== 0) {
+      return purposeDifference;
     }
 
-    // Equal size: prefer resizable raster over ico.
-    if (a.format !== b.format) {
-      return a.format === 'raster' ? -1 : 1;
+    const mediaDifference = Number(!!left.media) - Number(!!right.media);
+
+    if (mediaDifference !== 0) {
+      return mediaDifference;
+    }
+
+    const scalableDifference = Number(right.format === 'svg') - Number(left.format === 'svg');
+
+    if (scalableDifference !== 0) {
+      return scalableDifference;
+    }
+
+    const sizeDifference =
+      sizeDistance(left.size, targetSize) - sizeDistance(right.size, targetSize);
+
+    if (sizeDifference !== 0) {
+      return sizeDifference;
+    }
+
+    if (left.format !== right.format) {
+      return left.format === 'raster' ? -1 : 1;
     }
 
     return 0;
   });
 };
 
-/**
- * Collect and rank favicon candidates declared in the document, resolved
- * against the post-redirect base. Returns them best-first so the caller can
- * walk the list — resizing rasters, serving SVG as-is, and skipping ICO when a
- * resizable candidate exists. Empty when the document declares none.
- */
-export const extractFaviconCandidates = (root: HTMLElement, base: string): IconCandidate[] => {
+/** Collect icon declarations and resolve them against the document's effective base URL. */
+export const extractFaviconCandidates = (root: HTMLElement, documentUrl: string) => {
+  const ctx = createExtractorContext(root, documentUrl);
   const candidates: IconCandidate[] = [];
 
   for (const link of root.querySelectorAll('link')) {
-    const rel = link.getAttribute('rel')?.trim().toLowerCase();
+    const rels = tokenize(ctx.attribute(link, 'rel'));
+    const isApple =
+      rels.includes('apple-touch-icon') || rels.includes('apple-touch-icon-precomposed');
 
-    if (!rel) {
+    if (!rels.includes('icon') && !isApple) {
       continue;
     }
 
-    const isIcon = ICON_RELS.has(rel) || rel.split(/\s+/).some((token) => token === 'icon');
+    const href = resolveHttpUrl(
+      ctx.attribute(link, 'href'),
+      ctx.declaredBaseUrl ?? documentUrl,
+    );
 
-    if (!isIcon) {
+    if (!href) {
       continue;
     }
 
-    const href = link.getAttribute('href')?.trim();
-
-    if (!href || href.toLowerCase().startsWith('data:')) {
-      continue;
-    }
-
-    let resolved: string;
-
-    try {
-      resolved = new URL(href, base).toString();
-    } catch {
-      continue;
-    }
-
-    const declaredSize = parseSizes(link.getAttribute('sizes'));
-    const assumedSize = rel.includes('apple-touch-icon')
-      ? ASSUMED_APPLE_SIZE
-      : ASSUMED_DEFAULT_SIZE;
+    const type = ctx.attribute(link, 'type');
+    const format = classifyFormat(href, type);
+    const declaredSize = parseSizes(ctx.attribute(link, 'sizes'));
 
     candidates.push({
-      href: resolved,
-      size: declaredSize ?? assumedSize,
-      format: classifyFormat(resolved, link.getAttribute('type') ?? undefined),
+      href,
+      type,
+      media: ctx.attribute(link, 'media'),
+      size:
+        format === 'svg'
+          ? SCALABLE_SIZE
+          : (declaredSize ?? (isApple ? ASSUMED_APPLE_SIZE : ASSUMED_DEFAULT_SIZE)),
+      format,
+      purposes: ['any'],
+      source: 'html',
     });
   }
 
   return rankCandidates(candidates);
 };
 
-/**
- * Find the manifest URL declared by <link rel="manifest">, resolved against the
- * post-redirect base. Null when absent.
- */
-export const extractManifestUrl = (root: HTMLElement, base: string): string | null => {
-  for (const link of root.querySelectorAll('link')) {
-    const rel = link.getAttribute('rel')?.trim().toLowerCase();
+/** Find the manifest URL and resolve it against the document's effective base URL. */
+export const extractManifestUrl = (root: HTMLElement, documentUrl: string): string | null => {
+  const ctx = createExtractorContext(root, documentUrl);
 
-    if (rel !== 'manifest') {
-      continue;
-    }
+  for (const link of ctx.links('manifest')) {
+    const resolved = resolveHttpUrl(
+      ctx.attribute(link, 'href'),
+      ctx.declaredBaseUrl ?? documentUrl,
+    );
 
-    const href = link.getAttribute('href')?.trim();
-
-    if (!href) {
-      continue;
-    }
-
-    try {
-      return new URL(href, base).toString();
-    } catch {
-      return null;
+    if (resolved) {
+      return resolved;
     }
   }
 
@@ -172,17 +266,19 @@ interface ManifestIcon {
   src?: unknown;
   sizes?: unknown;
   type?: unknown;
+  purpose?: unknown;
 }
 
-/**
- * Turn a parsed web app manifest's `icons` array into ranked candidates,
- * resolved against the manifest's own URL. Tolerant of malformed entries.
- */
+/** Convert valid Web App Manifest icons into candidates resolved from the manifest URL. */
 export const candidatesFromManifest = (
   manifest: unknown,
   manifestUrl: string,
 ): IconCandidate[] => {
-  const icons = (manifest as { icons?: unknown })?.icons;
+  if (typeof manifest !== 'object' || manifest === null) {
+    return [];
+  }
+
+  const icons = (manifest as { icons?: unknown }).icons;
 
   if (!Array.isArray(icons)) {
     return [];
@@ -195,23 +291,30 @@ export const candidatesFromManifest = (
       continue;
     }
 
-    let resolved: string;
+    const href = resolveHttpUrl(entry.src, manifestUrl);
+    const purposes = purposesFrom(entry.purpose);
 
-    try {
-      resolved = new URL(entry.src, manifestUrl).toString();
-    } catch {
+    if (
+      !href ||
+      purposes.length === 0 ||
+      purposes.every((purpose) => purpose === 'monochrome')
+    ) {
       continue;
     }
 
     const sizes = typeof entry.sizes === 'string' ? entry.sizes : undefined;
-    const type = typeof entry.type === 'string' ? entry.type : undefined;
+    const type = typeof entry.type === 'string' ? entry.type.trim() || undefined : undefined;
+    const format = classifyFormat(href, type);
 
     candidates.push({
-      href: resolved,
-      size: parseSizes(sizes) ?? ASSUMED_DEFAULT_SIZE,
-      format: classifyFormat(resolved, type),
+      href,
+      type,
+      size: format === 'svg' ? SCALABLE_SIZE : (parseSizes(sizes) ?? ASSUMED_DEFAULT_SIZE),
+      format,
+      purposes,
+      source: 'manifest',
     });
   }
 
-  return candidates;
+  return rankCandidates(candidates);
 };

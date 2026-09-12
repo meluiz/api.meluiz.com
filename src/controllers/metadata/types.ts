@@ -50,6 +50,14 @@ export interface SiteVerification {
   pinterest?: string;
 }
 
+export interface OpengraphMedia {
+  url?: string;
+  secureUrl?: string;
+  type?: string;
+  width?: number;
+  height?: number;
+}
+
 export interface OpengraphImage {
   url?: string;
   alt?: string;
@@ -98,11 +106,13 @@ export interface Opengraph {
   audio?: string;
   audioType?: string;
   audioSecureUrl?: string;
+  audios?: OpengraphMedia[];
   video?: string;
   videoType?: string;
   videoWidth?: number;
   videoHeight?: number;
   videoSecureUrl?: string;
+  videos?: OpengraphMedia[];
   image?: string;
   imageAlt?: string;
   images?: OpengraphImage[];
@@ -112,6 +122,9 @@ export interface Opengraph {
   articleAuthor?: string[];
   articleSection?: string;
   articleTag?: string[];
+  facebookAppId?: string;
+  facebookAdmins?: string[];
+  facebookPages?: string[];
 }
 
 export interface Twitter {

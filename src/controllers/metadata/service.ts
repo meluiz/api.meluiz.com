@@ -1,7 +1,12 @@
+import type { MetadataAnalysisMode } from './types';
+
 import parse from 'node-html-parser';
 
 import { BadGatewayError, ServerError } from '#util/errors';
 
+import { extractDocumentSignals, type MetadataAnalysisContext } from './analysis/context';
+import { collectDeepAnalysisSignals } from './analysis/remote';
+import { analyzeMetadata } from './analyzer';
 import { extractMetadata } from './extractor';
 import { assertSafeRemoteUrl, type HostResolver } from './url-policy';
 
@@ -185,4 +190,58 @@ export const getMetadataByUrl = async (url: string, options: FetchDocumentOption
       redirects: document.redirects,
     },
   });
+};
+
+export interface GetMetadataAnalysisOptions extends FetchDocumentOptions {
+  mode?: MetadataAnalysisMode;
+  /** Overall budget for the deep phase. */
+  deepTimeout?: number;
+  /** Ceiling for any single remote request inside that budget. */
+  deepRequestTimeout?: number;
+  deepConcurrency?: number;
+  maxAlternates?: number;
+}
+
+export const getMetadataAnalysisByUrl = async (
+  url: string,
+  options: GetMetadataAnalysisOptions = {},
+) => {
+  const {
+    deepConcurrency,
+    deepRequestTimeout,
+    deepTimeout,
+    maxAlternates,
+    mode = 'quick',
+    ...documentOptions
+  } = options;
+
+  const document = await fetchDocument(url, documentOptions);
+  const metadata = extractMetadata(document.root, {
+    resolvedUrl: document.url,
+    requestedUrl: url,
+  });
+
+  const context: MetadataAnalysisContext = {
+    mode,
+    document: extractDocumentSignals(document.root),
+    http: {
+      status: document.status,
+      headers: document.headers,
+      redirects: document.redirects,
+    },
+  };
+
+  if (mode === 'deep') {
+    context.deep = await collectDeepAnalysisSignals(metadata, {
+      concurrency: deepConcurrency,
+      fetcher: documentOptions.fetcher,
+      maxAlternates,
+      requestTimeout: deepRequestTimeout,
+      resolveHost: documentOptions.resolveHost,
+      signal: documentOptions.signal,
+      timeout: deepTimeout,
+    });
+  }
+
+  return analyzeMetadata(metadata, context);
 };

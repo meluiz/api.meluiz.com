@@ -1,25 +1,101 @@
-import type { Opengraph, OpengraphImage } from '../types';
+import type { Opengraph, OpengraphImage, OpengraphMedia } from '../types';
 import type { ExtractorContext } from './context';
 
 export const extractOpengraph = (ctx: ExtractorContext): Opengraph => {
-  const { attr, attrAll, fromAll, resolve, toNumber } = ctx;
+  const { attribute, fromAll, meta, metaAll, resolve, toNumber } = ctx;
 
   const getOpengraph = (property: `og:${string}`) => {
-    return attr(`meta[property='${property}']`, 'content');
+    return meta(property);
   };
 
   const getOpengraphAll = (property: `og:${string}`) => {
-    return attrAll(`meta[property='${property}']`, 'content');
+    return metaAll(property);
   };
 
   const getArticle = (property: `article:${string}`) => {
-    return attr(`meta[property='${property}']`, 'content') ?? getOpengraph(`og:${property}`);
+    return meta(property) ?? getOpengraph(`og:${property}`);
   };
 
   const getAllArticle = (property: `article:${string}`) => {
-    const standard = attrAll(`meta[property='${property}']`, 'content');
+    const standard = metaAll(property);
     return standard.length > 0 ? standard : getOpengraphAll(`og:${property}`);
   };
+
+  const propertyOf = (element: Parameters<typeof attribute>[0]) => {
+    return (attribute(element, 'property') ?? attribute(element, 'name'))?.toLowerCase();
+  };
+
+  const extractMedia = (prefix: 'og:audio' | 'og:video') => {
+    return fromAll('meta').reduce((items, element) => {
+      const property = propertyOf(element);
+      const content = attribute(element, 'content');
+
+      if (!property?.startsWith(prefix) || !content) {
+        return items;
+      }
+
+      const suffix = property.slice(prefix.length);
+
+      if (!suffix || suffix === ':url') {
+        items.push({ url: resolve(content) });
+        return items;
+      }
+
+      const current = items[items.length - 1];
+
+      if (!current) {
+        return items;
+      }
+
+      if (suffix === ':secure_url') {
+        current.secureUrl = resolve(content);
+      } else if (suffix === ':type') {
+        current.type = content;
+      } else if (suffix === ':width') {
+        current.width = toNumber(content);
+      } else if (suffix === ':height') {
+        current.height = toNumber(content);
+      }
+
+      return items;
+    }, [] as OpengraphMedia[]);
+  };
+
+  const images = fromAll('meta').reduce((items, element) => {
+    const property = propertyOf(element);
+    const content = attribute(element, 'content');
+
+    if (!property?.startsWith('og:image') || !content) {
+      return items;
+    }
+
+    const suffix = property.slice('og:image'.length);
+
+    if (!suffix || suffix === ':url') {
+      items.push({ url: resolve(content) });
+      return items;
+    }
+
+    const current = items[items.length - 1];
+
+    if (!current) {
+      return items;
+    }
+
+    if (suffix === ':width') {
+      current.width = toNumber(content);
+    } else if (suffix === ':height') {
+      current.height = toNumber(content);
+    } else if (suffix === ':secure_url') {
+      current.secureUrl = resolve(content);
+    } else if (suffix === ':alt') {
+      current.alt = content;
+    } else if (suffix === ':type') {
+      current.type = content;
+    }
+
+    return items;
+  }, [] as OpengraphImage[]);
 
   return {
     type: getOpengraph('og:type'),
@@ -40,6 +116,7 @@ export const extractOpengraph = (ctx: ExtractorContext): Opengraph => {
     audio: resolve(getOpengraph('og:audio')),
     audioType: getOpengraph('og:audio:type'),
     audioSecureUrl: resolve(getOpengraph('og:audio:secure_url')),
+    audios: extractMedia('og:audio'),
 
     locale: getOpengraph('og:locale'),
     localeAlternate: getOpengraphAll('og:locale:alternate'),
@@ -49,43 +126,14 @@ export const extractOpengraph = (ctx: ExtractorContext): Opengraph => {
     videoWidth: toNumber(getOpengraph('og:video:width')),
     videoHeight: toNumber(getOpengraph('og:video:height')),
     videoSecureUrl: resolve(getOpengraph('og:video:secure_url')),
+    videos: extractMedia('og:video'),
 
-    image: getOpengraph('og:image'),
+    image: resolve(getOpengraph('og:image') ?? getOpengraph('og:image:url')),
     imageAlt: getOpengraph('og:image:alt'),
-    images: fromAll("meta[property^='og:image']").reduce((previous, element) => {
-      const property = element.getAttribute('property');
-      const content = element.getAttribute('content');
+    images,
 
-      if (!content || !property) {
-        return previous;
-      }
-
-      const suffix = property.split('og:image')[1];
-
-      if (!suffix) {
-        previous.push({ url: resolve(content) });
-        return previous;
-      }
-
-      const last = previous[previous.length - 1];
-
-      if (!last) {
-        return previous;
-      }
-
-      const key = suffix.split(':')[1];
-
-      if (key === 'width' || key === 'height') {
-        last[key] = toNumber(content);
-      } else if (key === 'secure_url') {
-        last.secureUrl = resolve(content);
-      } else if (key === 'url') {
-        last.url = resolve(content);
-      } else if (key === 'alt' || key === 'type') {
-        last[key] = content;
-      }
-
-      return previous;
-    }, [] as OpengraphImage[]),
+    facebookAppId: meta('fb:app_id'),
+    facebookAdmins: metaAll('fb:admins'),
+    facebookPages: metaAll('fb:pages'),
   };
 };

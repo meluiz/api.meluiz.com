@@ -1,5 +1,6 @@
 export type { ExtractMetadataOptions } from './extractor';
-export type { FetchFaviconOptions } from './favicon';
+export type { IconCandidate, IconFormat, IconPurpose, IconSource } from './extractors';
+export type { FaviconFetcher, FetchFaviconOptions } from './favicon';
 export type { FetchDocumentOptions } from './service';
 export type {
   Alternate,

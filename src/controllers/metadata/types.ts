@@ -118,6 +118,14 @@ export interface Crawler {
   referrer?: string;
 }
 
+export interface MetadataDocument {
+  bytes: number;
+  status: number;
+  truncated: boolean;
+  contentType: string;
+  redirects: string[];
+}
+
 export interface Metadata {
   requestedUrl: string;
   resolvedUrl: string;

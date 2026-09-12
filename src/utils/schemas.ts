@@ -1,13 +1,11 @@
 import { z } from 'zod';
 
-const withProtocol = (value: string) => {
-  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
-};
+import { getNormalizedUrl } from './url';
 
 export const UrlSchema = z
   .string({ error: 'A URL was not provided' })
   .trim()
-  .transform(withProtocol)
+  .transform(getNormalizedUrl)
   .pipe(
     z.httpUrl({
       normalize: true,

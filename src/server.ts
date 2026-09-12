@@ -8,6 +8,7 @@ import { onError, onNotFound } from '#plugin/error';
 import { logger } from '#plugin/logger';
 import { rateLimit } from '#plugin/rate-limit';
 import { requestId } from '#plugin/request-id';
+import { assets } from '#routes/assets';
 import { health } from '#routes/health';
 import { metadata } from '#routes/metadata';
 
@@ -26,6 +27,7 @@ hono.notFound(onNotFound);
 
 /* ------- routes ------- */
 
+hono.route('/assets', assets);
 hono.route('/health', health);
 hono.route('/metadata', metadata);
 

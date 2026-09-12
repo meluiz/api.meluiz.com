@@ -1,5 +1,27 @@
 const STANDARD_PROTOCOLS = new Set(['http:', 'https:']);
 
+/* ///////////////////////////////////////////////// */
+
+export const compareUrl = (left?: string | URL | null, right?: string | URL | null) => {
+  const comparableLeft = getComparableUrl(left);
+  const comparableRight = getComparableUrl(right);
+
+  return comparableLeft !== null && comparableLeft === comparableRight;
+};
+
+export const parseHttpUrl = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    return STANDARD_PROTOCOLS.has(url.protocol) ? url : null;
+  } catch {
+    return null;
+  }
+};
+
 export const getNormalizedUrl = (url: string): string | null => {
   let href = url.trim();
 
@@ -46,4 +68,23 @@ export const getNormalizedUrl = (url: string): string | null => {
   }
 
   return result;
+};
+
+export const getComparableUrl = (value?: string | URL | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = getNormalizedUrl(typeof value === 'string' ? value : value.toString());
+
+  if (!normalized) {
+    return null;
+  }
+
+  const url = new URL(normalized);
+
+  url.hash = '';
+  url.pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : '/';
+
+  return url.toString();
 };

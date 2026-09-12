@@ -67,6 +67,11 @@ export interface OpengraphImage {
   secureUrl?: string;
 }
 
+export interface TwitterLabel {
+  label?: string;
+  data?: string;
+}
+
 export interface General {
   title?: string;
   description?: string;
@@ -151,6 +156,7 @@ export interface Twitter {
   appNameGoogleplay?: string;
   appIdGoogleplay?: string;
   appUrlGoogleplay?: string;
+  labels?: TwitterLabel[];
 }
 
 export interface Mobile {

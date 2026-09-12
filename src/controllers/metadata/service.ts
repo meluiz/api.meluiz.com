@@ -154,6 +154,17 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
 };
 
 export const getMetadataByUrl = async (url: string, options: FetchDocumentOptions = {}) => {
-  const { root, url: resolvedUrl } = await fetchDocument(url, options);
-  return extractMetadata(root, { resolvedUrl, requestedUrl: url });
+  const document = await fetchDocument(url, options);
+
+  return extractMetadata(document.root, {
+    resolvedUrl: document.url,
+    requestedUrl: url,
+    document: {
+      status: document.status,
+      bytes: document.bytes,
+      contentType: document.contentType,
+      truncated: document.truncated,
+      redirects: document.redirects,
+    },
+  });
 };

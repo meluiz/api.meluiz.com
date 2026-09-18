@@ -92,7 +92,19 @@
       },
       "style": {
         "noNonNullAssertion": "off",
-        "useAsConstAssertion": "error"
+        "useAsConstAssertion": "error",
+        "useImportType": {
+          "level": "on",
+          "options": {
+            "style": "separatedType"
+          }
+        },
+        "useExportType": {
+          "level": "on",
+          "options": {
+            "style": "separatedType"
+          }
+        }
       },
       "suspicious": {
         "noExplicitAny": "off",

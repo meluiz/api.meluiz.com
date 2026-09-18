@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "scripts": {
+    "dev": "bun run --hot src/server.ts",
+    "lint": "biome lint --write",
+    "format": "biome format --write"
+  },
+  "dependencies": {
+    "hono": "^4.13.7",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@types/bun": "latest",
+    "@types/node": "^26.4.1"
+  }
+}

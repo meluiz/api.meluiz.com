@@ -10,6 +10,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@hono/zod-validator": "^0.9.1",
     "@motiro/string": "^0.1.3",
     "envin": "^1.2.0",
     "hono": "^4.13.7",

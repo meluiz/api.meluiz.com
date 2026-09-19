@@ -1,262 +1,358 @@
-/* ------- root ------- */
+import { z } from 'zod';
 
-import type { Metadata } from './metadata';
+import { Metadata } from './metadata';
 
-export interface Analysis {
-  resolvedUrl: string;
-  requestedUrl: string;
+/*
+ * The analysis response is declared as Zod schemas, with the TypeScript types
+ * derived from them, so the OpenAPI document and the code share one source.
+ * The analysis context below is internal input and stays as plain interfaces.
+ */
 
-  mode: AnalysisMode;
+/* ------- enums ------- */
 
-  /** Weighted average of the category scores; `null` when nothing was evaluated. */
-  score: number | null;
-  scores: AnalysisScores;
-  summary: AnalysisSummary;
-  scoring: AnalysisScoring;
-  categories: AnalysisCategory[];
-}
+/**
+ * What the check actually concluded. `absent` still consumes the full weight;
+ * `not-applicable` and `unknown` leave the denominator.
+ */
+export const AnalysisOutcome = z
+  .enum(['pass', 'warn', 'fail', 'absent', 'not-applicable', 'unknown'])
+  .meta({
+    description:
+      'pass/warn/fail: graded. absent: missing, and the absence is the defect. not-applicable: does not apply or is charged elsewhere. unknown: could not be evaluated.',
+  });
 
-export type AnalysisMode = 'quick' | 'deep';
+export type AnalysisOutcome = z.infer<typeof AnalysisOutcome>;
 
-export interface AnalysisScores {
-  social: number | null;
-  content: number | null;
-  technical: number | null;
-  indexability: number | null;
-}
+export const AnalysisStatus = z
+  .enum(['passed', 'warning', 'error', 'skipped'])
+  .meta({ description: 'UI projection of outcome; the scoring model never reads it' });
 
-export interface AnalysisSummary {
-  total: number;
-  passed: number;
-  errors: number;
-  unknown: number;
-  warnings: number;
-  applicable: number;
-  notApplicable: number;
-}
+export type AnalysisStatus = z.infer<typeof AnalysisStatus>;
+
+export const AnalysisMode = z.enum(['quick', 'deep']);
+
+export type AnalysisMode = z.infer<typeof AnalysisMode>;
+
+export const AnalysisSeverity = z.enum(['critical', 'high', 'medium', 'low']);
+
+export type AnalysisSeverity = z.infer<typeof AnalysisSeverity>;
+
+export const AnalysisSource = z.enum([
+  'metadata',
+  'html',
+  'http',
+  'robots.txt',
+  'sitemap',
+  'remote-resource',
+]);
+
+export type AnalysisSource = z.infer<typeof AnalysisSource>;
+
+export const AnalysisCategoryId = z.enum([
+  'basic-seo',
+  'indexing',
+  'content',
+  'social',
+  'urls',
+  'technical',
+]);
+
+export type AnalysisCategoryId = z.infer<typeof AnalysisCategoryId>;
+
+export const AnalysisLimitUnit = z.enum(['characters', 'items', 'pixels', 'query-parameters']);
+
+export type AnalysisLimitUnit = z.infer<typeof AnalysisLimitUnit>;
 
 /* ------- scoring model ------- */
 
-export interface AnalysisScoring {
-  version: '3.0';
-  method: 'weighted-category';
+export const AnalysisPoints = z.object({
+  earned: z.number(),
+  maximum: z.number(),
+});
 
-  points: AnalysisPoints;
-  coverage: AnalysisCoverage;
-  /** Ids of every check that did not enter the score. */
-  skipped: string[];
+export type AnalysisPoints = z.infer<typeof AnalysisPoints>;
 
-  outcomeScores: Record<AnalysisOutcome, number>;
-  categoryWeights: Record<AnalysisCategoryId, number>;
-}
+export const AnalysisCoverage = z.object({
+  total: z
+    .number()
+    .meta({ description: 'Weight of every check that was considered, evaluated or not' }),
+  ratio: z.number(),
+  evaluated: z.number().meta({ description: 'Weight that actually entered the score' }),
+});
 
-export interface AnalysisPoints {
-  earned: number;
-  maximum: number;
-}
+export type AnalysisCoverage = z.infer<typeof AnalysisCoverage>;
 
-export interface AnalysisCoverage {
-  /** Weight of every check that was considered, evaluated or not. */
-  total: number;
-  ratio: number;
-  /** Weight that actually entered the score. */
-  evaluated: number;
-}
+export const AnalysisScoring = z.object({
+  version: z.literal('3.0'),
+  method: z.literal('weighted-category'),
 
-/* ------- categories ------- */
+  points: AnalysisPoints,
+  coverage: AnalysisCoverage,
+  skipped: z
+    .array(z.string())
+    .meta({ description: 'Ids of every check that did not enter the score' }),
 
-export type AnalysisCategoryId =
-  | 'basic-seo'
-  | 'indexing'
-  | 'content'
-  | 'social'
-  | 'urls'
-  | 'technical';
+  outcomeScores: z.record(AnalysisOutcome, z.number()),
+  categoryWeights: z.record(AnalysisCategoryId, z.number()),
+});
 
-export interface AnalysisCategory {
-  id: AnalysisCategoryId;
-  name: string;
-  description: string;
+export type AnalysisScoring = z.infer<typeof AnalysisScoring>;
 
-  /** `null` when nothing in the category could be evaluated. */
-  score: number | null;
-  weight: number;
-  points: AnalysisPoints;
-  summary: AnalysisSummary;
+export const AnalysisSummary = z.object({
+  total: z.number().int(),
+  passed: z.number().int(),
+  errors: z.number().int(),
+  unknown: z.number().int(),
+  warnings: z.number().int(),
+  applicable: z.number().int(),
+  notApplicable: z.number().int(),
+});
 
-  checks: AnalysisCheck[];
-}
+export type AnalysisSummary = z.infer<typeof AnalysisSummary>;
 
 /* ------- checks ------- */
 
-export interface AnalysisCheck {
-  id: string;
-  name: string;
-  description: string;
+export const AnalysisValue = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.array(z.string()),
+  z.null(),
+]);
 
-  outcome: AnalysisOutcome;
-  /** UI projection of `outcome`; the scoring model never reads it. */
-  status: AnalysisStatus;
-  /** Continuous grade in the 0..1 range; enables partial credit. */
-  score: number;
-  weight: number;
-  points: AnalysisPoints;
-  severity: AnalysisSeverity;
-  confidence: number;
-  /** True when the check contributes to both sides of the score fraction. */
-  applicable: boolean;
-  /** Check whose subject this one builds on; drives dependency suppression. */
-  dependsOn?: string;
+export type AnalysisValue = z.infer<typeof AnalysisValue>;
 
-  value: AnalysisValue;
-  numericValue?: number;
-  limits?: AnalysisLimits;
+export const AnalysisLimits = z.object({
+  unit: AnalysisLimitUnit,
+  ideal: z.string().optional(),
+  minimum: z.number().optional(),
+  maximum: z.number().optional(),
+});
 
-  reason: string;
-  source: AnalysisSource;
-  evidence: string[];
-  recommendation: string;
-}
+export type AnalysisLimits = z.infer<typeof AnalysisLimits>;
 
-/**
- * What the check actually concluded.
- *
- * - `pass` / `warn` / `fail`: the subject exists and was graded.
- * - `absent`: the subject is missing and that absence is itself the defect,
- *   so the check still consumes its full weight.
- * - `not-applicable`: the check does not apply to this page, or the defect is
- *   already charged by another check. Leaves the denominator entirely.
- * - `unknown`: the check could not be evaluated (timeout, missing signal).
- *   Leaves the denominator instead of being scored as a failure.
- */
-export type AnalysisOutcome =
-  | 'pass'
-  | 'warn'
-  | 'fail'
-  | 'absent'
-  | 'not-applicable'
-  | 'unknown';
+export const AnalysisCheck = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string(),
 
-export type AnalysisStatus = 'passed' | 'warning' | 'error' | 'skipped';
+    outcome: AnalysisOutcome,
+    status: AnalysisStatus,
+    score: z.number().meta({ description: 'Continuous grade in the 0..1 range' }),
+    weight: z.number(),
+    points: AnalysisPoints,
+    severity: AnalysisSeverity,
+    confidence: z.number(),
+    applicable: z
+      .boolean()
+      .meta({ description: 'True when the check contributes to both sides of the score' }),
+    dependsOn: z
+      .string()
+      .optional()
+      .meta({ description: 'Check whose subject this one builds on' }),
 
-export type AnalysisSeverity = 'critical' | 'high' | 'medium' | 'low';
+    value: AnalysisValue,
+    numericValue: z.number().optional(),
+    limits: AnalysisLimits.optional(),
 
-export type AnalysisSource =
-  | 'metadata'
-  | 'html'
-  | 'http'
-  | 'robots.txt'
-  | 'sitemap'
-  | 'remote-resource';
+    reason: z.string(),
+    source: AnalysisSource,
+    evidence: z.array(z.string()),
+    recommendation: z.string(),
+  })
+  .meta({ id: 'AnalysisCheck' });
 
-export type AnalysisValue = string | number | boolean | string[] | null;
+export type AnalysisCheck = z.infer<typeof AnalysisCheck>;
 
-export interface AnalysisLimits {
-  unit: AnalysisLimitUnit;
-  ideal?: string;
-  minimum?: number;
-  maximum?: number;
-}
+/* ------- categories ------- */
 
-export type AnalysisLimitUnit = 'characters' | 'items' | 'pixels' | 'query-parameters';
+export const AnalysisCategory = z
+  .object({
+    id: AnalysisCategoryId,
+    name: z.string(),
+    description: z.string(),
+
+    score: z
+      .number()
+      .nullable()
+      .meta({ description: 'null when nothing in the category could be evaluated' }),
+    weight: z.number(),
+    points: AnalysisPoints,
+    summary: AnalysisSummary,
+
+    checks: z.array(AnalysisCheck),
+  })
+  .meta({ id: 'AnalysisCategory' });
+
+export type AnalysisCategory = z.infer<typeof AnalysisCategory>;
+
+/* ------- root ------- */
+
+export const AnalysisScores = z.object({
+  social: z.number().nullable(),
+  content: z.number().nullable(),
+  technical: z.number().nullable(),
+  indexability: z.number().nullable(),
+});
+
+export type AnalysisScores = z.infer<typeof AnalysisScores>;
+
+export const Analysis = z
+  .object({
+    resolvedUrl: z.string(),
+    requestedUrl: z.string(),
+
+    mode: AnalysisMode,
+
+    score: z.number().nullable().meta({
+      description: 'Weighted average of the category scores; null when nothing was evaluated',
+    }),
+    scores: AnalysisScores,
+    summary: AnalysisSummary,
+    scoring: AnalysisScoring,
+    categories: z.array(AnalysisCategory),
+  })
+  .meta({ id: 'Analysis' });
+
+export type Analysis = z.infer<typeof Analysis>;
 
 /* ------- analysis context ------- */
 
-/** Everything a check may read besides the extracted . */
-export interface AnalysisContext {
-  mode: AnalysisMode;
-  /** DOM-level facts the extractors do not model. */
-  document?: DocumentSignals;
-  /** The response that delivered the document. */
-  http?: HttpSignals;
-  /** Network probes; only populated in deep mode. */
-  deep?: DeepAnalysisSignals;
-}
-
-/** Input shared by every check. */
-export type CheckInput = {
-  metadata: Metadata;
-  context: AnalysisContext;
-};
-
 /* ------- document signals ------- */
 
-export interface DocumentSignals {
-  titleCount: number;
-  canonicalCount: number;
-  descriptionCount: number;
+export const DetectedLanguage = z.object({
+  code: z.enum(['en', 'es', 'pt']),
+  confidence: z.number(),
+});
 
-  h1s: string[];
-  mainText: string;
-  images: DocumentImageSignal[];
-  /**  declared outside the head; empty when the head is implicit. */
-  metadataOutsideHead: string[];
-  detectedLanguage?: DetectedLanguage;
-}
+export type DetectedLanguage = z.infer<typeof DetectedLanguage>;
 
-export interface DocumentImageSignal {
-  alt?: string;
-  src?: string;
-}
+export const DocumentImageSignal = z.object({
+  alt: z.string().optional(),
+  src: z.string().optional(),
+});
 
-export interface DetectedLanguage {
-  code: 'en' | 'es' | 'pt';
-  confidence: number;
-}
+export type DocumentImageSignal = z.infer<typeof DocumentImageSignal>;
+
+export const DocumentSignals = z.object({
+  titleCount: z.number(),
+  canonicalCount: z.number(),
+  descriptionCount: z.number(),
+
+  h1s: z.array(z.string()),
+  mainText: z.string(),
+  images: z.array(DocumentImageSignal),
+
+  /** Metadata declared outside the head; empty when the head is implicit. */
+  metadataOutsideHead: z.array(z.string()),
+
+  detectedLanguage: DetectedLanguage.optional(),
+});
+
+export type DocumentSignals = z.infer<typeof DocumentSignals>;
 
 /* ------- http signals ------- */
 
-export interface HttpSignals {
-  status: number;
-  headers: Record<string, string>;
-  redirects: string[];
-}
+export const HttpSignals = z.object({
+  status: z.number(),
+  headers: z.record(z.string(), z.string()),
+  redirects: z.array(z.string()),
+});
+
+export type HttpSignals = z.infer<typeof HttpSignals>;
 
 /* ------- deep signals ------- */
 
-export interface DeepAnalysisSignals {
-  robots?: RobotsSignals;
-  sitemap?: SitemapSignals;
-  resources: RemoteResourceSignal[];
-  alternates: AlternatePageSignal[];
-}
+export const RemoteProbeSignal = z.object({
+  url: z.string(),
+  status: z.number().optional(),
+  error: z.string().optional(),
 
-/** Fields shared by every remote probe. */
-export interface RemoteProbeSignal {
-  url: string;
-  status?: number;
-  error?: string;
   /** The request ran out of time; the subject is unmeasured, not broken. */
-  timeout?: boolean;
-}
+  timeout: z.boolean().optional(),
+});
 
-export type RemoteResourceKind = 'favicon' | 'open-graph-image' | 'twitter-image';
+export type RemoteProbeSignal = z.infer<typeof RemoteProbeSignal>;
 
-export interface RemoteResourceSignal extends RemoteProbeSignal {
-  kind: RemoteResourceKind;
-  bytes?: number;
-  width?: number;
-  height?: number;
-  contentType?: string;
-}
+export const RemoteResourceKind = z.enum(['favicon', 'open-graph-image', 'twitter-image']);
 
-export interface RobotsSignals extends RemoteProbeSignal {
+export type RemoteResourceKind = z.infer<typeof RemoteResourceKind>;
+
+export const RemoteResourceSignal = RemoteProbeSignal.extend({
+  kind: RemoteResourceKind,
+  bytes: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  contentType: z.string().optional(),
+});
+
+export type RemoteResourceSignal = z.infer<typeof RemoteResourceSignal>;
+
+export const RobotsSignals = RemoteProbeSignal.extend({
   /** `null` when no rule applies, which means crawling is allowed by default. */
-  allowed: boolean | null;
-  sitemaps: string[];
-}
+  allowed: z.boolean().nullable(),
+  sitemaps: z.array(z.string()),
+});
 
-export interface SitemapSignals extends RemoteProbeSignal {
+export type RobotsSignals = z.infer<typeof RobotsSignals>;
+
+export const SitemapSignals = RemoteProbeSignal.extend({
   /** `null` when the sitemap could only be read partially without a match. */
-  containsCanonical: boolean | null;
-  /** Number of sitemap documents inspected, following one index level. */
-  inspected?: number;
-}
+  containsCanonical: z.boolean().nullable(),
 
-export interface AlternatePageSignal extends RemoteProbeSignal {
-  hrefLang?: string;
-  canonical?: string;
-  reciprocal: boolean | null;
+  /** Number of sitemap documents inspected, following one index level. */
+  inspected: z.number().optional(),
+});
+
+export type SitemapSignals = z.infer<typeof SitemapSignals>;
+
+export const AlternatePageSignal = RemoteProbeSignal.extend({
+  hrefLang: z.string().optional(),
+  canonical: z.string().optional(),
+  reciprocal: z.boolean().nullable(),
+
   /** The body was cut before `</head>`, so canonical and hreflang are unknown. */
-  truncated?: boolean;
-}
+  truncated: z.boolean().optional(),
+});
+
+export type AlternatePageSignal = z.infer<typeof AlternatePageSignal>;
+
+export const DeepAnalysisSignals = z.object({
+  robots: RobotsSignals.optional(),
+  sitemap: SitemapSignals.optional(),
+  resources: z.array(RemoteResourceSignal),
+  alternates: z.array(AlternatePageSignal),
+});
+
+export type DeepAnalysisSignals = z.infer<typeof DeepAnalysisSignals>;
+
+/* ------- analysis context ------- */
+
+/** Everything a check may read besides the extracted metadata. */
+export const AnalysisContext = z
+  .object({
+    mode: AnalysisMode,
+
+    /** DOM-level facts the extractors do not model. */
+    document: DocumentSignals.optional(),
+
+    /** The response that delivered the document. */
+    http: HttpSignals.optional(),
+
+    /** Network probes; only populated in deep mode. */
+    deep: DeepAnalysisSignals.optional(),
+  })
+  .meta({ id: 'AnalysisContext' });
+
+export type AnalysisContext = z.infer<typeof AnalysisContext>;
+
+/** Input shared by every check. */
+export const CheckInput = z
+  .object({
+    metadata: Metadata,
+    context: AnalysisContext,
+  })
+  .meta({ id: 'CheckInput' });
+
+export type CheckInput = z.infer<typeof CheckInput>;

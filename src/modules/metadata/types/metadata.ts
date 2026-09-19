@@ -1,252 +1,316 @@
-/* ------- root ------- */
+import { z } from 'zod';
 
-export interface Metadata {
-  resolvedUrl: string;
-  requestedUrl: string;
-
-  /** Present on extraction responses; omitted when the metadata feeds an analysis. */
-  document?: MetadataDocument;
-
-  mobile: Mobile;
-  general: General;
-  crawler: Crawler;
-  twitter: Twitter;
-  opengraph: Opengraph;
-}
-
-export interface MetadataDocument {
-  status: number;
-  contentType: string;
-
-  /** Bytes read from the body, capped by the fetch byte limit. */
-  bytes: number;
-  truncated: boolean;
-
-  /** URLs followed after the requested one, in order. */
-  redirects: string[];
-}
+/*
+ * Response types are declared as Zod schemas and the TypeScript types are
+ * derived from them, so the OpenAPI document and the code share one source.
+ * Each schema and its type have the same name: `Metadata` is the schema in
+ * value position and the type in type position.
+ */
 
 /* ------- shared ------- */
 
 /** An icon declared with a <link> element. */
-export interface IconLink {
-  href?: string;
-  sizes?: string;
-}
+export const IconLink = z.object({
+  href: z.string().optional(),
+  sizes: z.string().optional(),
+});
+
+export type IconLink = z.infer<typeof IconLink>;
 
 /* ------- general ------- */
 
-export interface General {
-  /** Canonical URL, from <link rel="canonical">. */
-  url?: string;
-  title?: string;
-  language?: string;
-  description?: string;
+export const Alternate = z.object({
+  href: z.string().optional(),
+  type: z.string().optional(),
+  media: z.string().optional(),
+  title: z.string().optional(),
+  hrefLang: z.string().optional(),
+});
 
-  next?: string;
-  previous?: string;
-  alternates?: Alternate[];
+export type Alternate = z.infer<typeof Alternate>;
 
-  /** Declared <base href>, when valid. */
-  baseUrl?: string;
-  charset?: string;
-  viewport?: string;
-  colorScheme?: string;
-  formatDetection?: string;
+export const Author = z.object({
+  href: z.string().optional(),
+  name: z.string().optional(),
+});
 
-  /** Same source as Crawler.robots; kept for compatibility. */
-  robots?: string;
+export type Author = z.infer<typeof Author>;
 
-  authors?: Author[];
-  license?: string;
-  keywords?: string;
-  generator?: string;
-  applicationName?: string;
+export const Favicon = IconLink.extend({
+  rel: z.string().optional(),
+  type: z.string().optional(),
+});
 
-  favicons?: Favicon[];
-  manifest?: string;
-  themeColors?: ThemeColor[];
+export type Favicon = z.infer<typeof Favicon>;
 
-  verification?: SiteVerification;
-  structuredData?: StructuredData;
-}
+export const ThemeColor = z.object({
+  media: z.string().optional(),
+  value: z.string().optional(),
+});
 
-export interface Alternate {
-  href?: string;
-  type?: string;
-  media?: string;
-  title?: string;
-  hrefLang?: string;
-}
+export type ThemeColor = z.infer<typeof ThemeColor>;
 
-export interface Author {
-  href?: string;
-  name?: string;
-}
+export const SiteVerification = z.object({
+  bing: z.string().optional(),
+  google: z.string().optional(),
+  yandex: z.string().optional(),
+  pinterest: z.string().optional(),
+});
 
-export interface Favicon extends IconLink {
-  rel?: string;
-  type?: string;
-}
+export type SiteVerification = z.infer<typeof SiteVerification>;
 
-export interface ThemeColor {
-  media?: string;
-  value?: string;
-}
+export const StructuredDataIssue = z.object({
+  type: z.string().optional(),
+  property: z.string().optional(),
 
-export interface SiteVerification {
-  bing?: string;
-  google?: string;
-  yandex?: string;
-  pinterest?: string;
-}
+  message: z.string(),
+  severity: z.enum(['error', 'warning']),
+});
 
-export interface StructuredData {
-  /** Number of application/ld+json blocks. */
-  count: number;
-  /** Blocks that parsed as JSON. */
-  valid: number;
-  invalid: number;
+export type StructuredDataIssue = z.infer<typeof StructuredDataIssue>;
 
-  types: string[];
-  issues: StructuredDataIssue[];
-}
+export const StructuredData = z.object({
+  count: z.number().int().meta({ description: 'Number of application/ld+json blocks' }),
+  valid: z.number().int().meta({ description: 'Blocks that parsed as JSON' }),
+  invalid: z.number().int(),
 
-export interface StructuredDataIssue {
-  type?: string;
-  property?: string;
+  types: z.array(z.string()),
+  issues: z.array(StructuredDataIssue),
+});
 
-  message: string;
-  severity: 'error' | 'warning';
-}
+export type StructuredData = z.infer<typeof StructuredData>;
+
+export const General = z
+  .object({
+    url: z
+      .string()
+      .optional()
+      .meta({ description: 'Canonical URL, from <link rel="canonical">' }),
+    title: z.string().optional(),
+    language: z.string().optional(),
+    description: z.string().optional(),
+
+    next: z.string().optional(),
+    previous: z.string().optional(),
+    alternates: z.array(Alternate).optional(),
+
+    baseUrl: z.string().optional().meta({ description: 'Declared <base href>, when valid' }),
+    charset: z.string().optional(),
+    viewport: z.string().optional(),
+    colorScheme: z.string().optional(),
+    formatDetection: z.string().optional(),
+
+    robots: z
+      .string()
+      .optional()
+      .meta({ description: 'Same source as crawler.robots; kept for compatibility' }),
+
+    authors: z.array(Author).optional(),
+    license: z.string().optional(),
+    keywords: z.string().optional(),
+    generator: z.string().optional(),
+    applicationName: z.string().optional(),
+
+    favicons: z.array(Favicon).optional(),
+    manifest: z.string().optional(),
+    themeColors: z.array(ThemeColor).optional(),
+
+    verification: SiteVerification.optional(),
+    structuredData: StructuredData.optional(),
+  })
+  .meta({ id: 'General' });
+
+export type General = z.infer<typeof General>;
 
 /* ------- open graph ------- */
 
-export interface Opengraph {
-  url?: string;
-  type?: string;
-  title?: string;
-  keywords?: string;
-  siteName?: string;
-  determiner?: string;
-  description?: string;
+export const OpengraphMedia = z.object({
+  url: z.string().optional(),
+  type: z.string().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  secureUrl: z.string().optional(),
+});
 
-  locale?: string;
-  localeAlternate?: string[];
+export type OpengraphMedia = z.infer<typeof OpengraphMedia>;
 
-  /** First item of `images`, flattened. */
-  image?: string;
-  imageAlt?: string;
-  images?: OpengraphImage[];
+export const OpengraphImage = OpengraphMedia.extend({
+  alt: z.string().optional(),
+});
 
-  /** First item of `videos`, flattened. */
-  video?: string;
-  videoType?: string;
-  videoWidth?: number;
-  videoHeight?: number;
-  videoSecureUrl?: string;
-  videos?: OpengraphMedia[];
+export type OpengraphImage = z.infer<typeof OpengraphImage>;
 
-  /** First item of `audios`, flattened. */
-  audio?: string;
-  audioType?: string;
-  audioSecureUrl?: string;
-  audios?: OpengraphMedia[];
+export const Opengraph = z
+  .object({
+    url: z.string().optional(),
+    type: z.string().optional(),
+    title: z.string().optional(),
+    keywords: z.string().optional(),
+    siteName: z.string().optional(),
+    determiner: z.string().optional(),
+    description: z.string().optional(),
 
-  articleTag?: string[];
-  articleAuthor?: string[];
-  articleSection?: string;
-  articleModifiedTime?: string;
-  articlePublishedTime?: string;
-  articleExpirationTime?: string;
+    locale: z.string().optional(),
+    localeAlternate: z.array(z.string()).optional(),
 
-  facebookAppId?: string;
-  facebookPages?: string[];
-  facebookAdmins?: string[];
-}
+    image: z.string().optional().meta({ description: 'First item of images, flattened' }),
+    imageAlt: z.string().optional(),
+    images: z.array(OpengraphImage).optional(),
 
-export interface OpengraphMedia {
-  url?: string;
-  type?: string;
-  width?: number;
-  height?: number;
-  secureUrl?: string;
-}
+    video: z.string().optional().meta({ description: 'First item of videos, flattened' }),
+    videoType: z.string().optional(),
+    videoWidth: z.number().optional(),
+    videoHeight: z.number().optional(),
+    videoSecureUrl: z.string().optional(),
+    videos: z.array(OpengraphMedia).optional(),
 
-export interface OpengraphImage extends OpengraphMedia {
-  alt?: string;
-}
+    audio: z.string().optional().meta({ description: 'First item of audios, flattened' }),
+    audioType: z.string().optional(),
+    audioSecureUrl: z.string().optional(),
+    audios: z.array(OpengraphMedia).optional(),
+
+    articleTag: z.array(z.string()).optional(),
+    articleAuthor: z.array(z.string()).optional(),
+    articleSection: z.string().optional(),
+    articleModifiedTime: z.string().optional(),
+    articlePublishedTime: z.string().optional(),
+    articleExpirationTime: z.string().optional(),
+
+    facebookAppId: z.string().optional(),
+    facebookPages: z.array(z.string()).optional(),
+    facebookAdmins: z.array(z.string()).optional(),
+  })
+  .meta({ id: 'Opengraph' });
+
+export type Opengraph = z.infer<typeof Opengraph>;
 
 /* ------- twitter ------- */
 
-export interface Twitter {
-  card?: string;
-  title?: string;
-  description?: string;
+export const TwitterLabel = z.object({
+  data: z.string().optional(),
+  label: z.string().optional(),
+});
 
-  image?: string;
-  imageAlt?: string;
+export type TwitterLabel = z.infer<typeof TwitterLabel>;
 
-  site?: string;
-  siteId?: string;
+export const Twitter = z
+  .object({
+    card: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
 
-  creator?: string;
-  creatorId?: string;
+    image: z.string().optional(),
+    imageAlt: z.string().optional(),
 
-  player?: string;
-  playerWidth?: string;
-  playerHeight?: string;
-  playerStream?: string;
+    site: z.string().optional(),
+    siteId: z.string().optional(),
 
-  appCountry?: string;
+    creator: z.string().optional(),
+    creatorId: z.string().optional(),
 
-  appIdIphone?: string;
-  appUrlIphone?: string;
-  appNameIphone?: string;
+    player: z.string().optional(),
+    playerWidth: z.string().optional(),
+    playerHeight: z.string().optional(),
+    playerStream: z.string().optional(),
 
-  appIdIpad?: string;
-  appUrlIpad?: string;
-  appNameIpad?: string;
+    appCountry: z.string().optional(),
 
-  appIdGoogleplay?: string;
-  appUrlGoogleplay?: string;
-  appNameGoogleplay?: string;
+    appIdIphone: z.string().optional(),
+    appUrlIphone: z.string().optional(),
+    appNameIphone: z.string().optional(),
 
-  labels?: TwitterLabel[];
-}
+    appIdIpad: z.string().optional(),
+    appUrlIpad: z.string().optional(),
+    appNameIpad: z.string().optional(),
 
-export interface TwitterLabel {
-  data?: string;
-  label?: string;
-}
+    appIdGoogleplay: z.string().optional(),
+    appUrlGoogleplay: z.string().optional(),
+    appNameGoogleplay: z.string().optional(),
+
+    labels: z.array(TwitterLabel).optional(),
+  })
+  .meta({ id: 'Twitter' });
+
+export type Twitter = z.infer<typeof Twitter>;
 
 /* ------- mobile ------- */
 
-export interface Mobile {
-  mobileWebAppCapable?: string;
+export const TouchIcon = IconLink;
 
-  appleMobileWebAppTitle?: string;
-  appleMobileWebAppCapable?: string;
-  appleMobileWebAppStatusBarStyle?: string;
+export type TouchIcon = z.infer<typeof TouchIcon>;
 
-  appleTouchIcons?: TouchIcon[];
-  appleTouchIconsPrecomposed?: TouchIcon[];
-}
+export const Mobile = z
+  .object({
+    mobileWebAppCapable: z.string().optional(),
 
-export type TouchIcon = IconLink;
+    appleMobileWebAppTitle: z.string().optional(),
+    appleMobileWebAppCapable: z.string().optional(),
+    appleMobileWebAppStatusBarStyle: z.string().optional(),
+
+    appleTouchIcons: z.array(TouchIcon).optional(),
+    appleTouchIconsPrecomposed: z.array(TouchIcon).optional(),
+  })
+  .meta({ id: 'Mobile' });
+
+export type Mobile = z.infer<typeof Mobile>;
 
 /* ------- crawler ------- */
 
-export interface Crawler {
-  robots?: string;
-  /** Browser referrer policy, not a crawler directive. */
-  referrer?: string;
+export const Crawler = z
+  .object({
+    robots: z.string().optional(),
+    referrer: z
+      .string()
+      .optional()
+      .meta({ description: 'Browser referrer policy, not a crawler directive' }),
 
-  yandex?: string;
-  bingbot?: string;
-  baiduspider?: string;
+    yandex: z.string().optional(),
+    bingbot: z.string().optional(),
+    baiduspider: z.string().optional(),
 
-  googlebot?: string;
-  googlebotNews?: string;
-  googlebotImage?: string;
-}
+    googlebot: z.string().optional(),
+    googlebotNews: z.string().optional(),
+    googlebotImage: z.string().optional(),
+  })
+  .meta({ id: 'Crawler' });
+
+export type Crawler = z.infer<typeof Crawler>;
+
+/* ------- root ------- */
+
+export const MetadataDocument = z.object({
+  status: z.number().int(),
+  contentType: z.string(),
+
+  bytes: z
+    .number()
+    .int()
+    .meta({ description: 'Bytes read from the body, capped by the fetch byte limit' }),
+  truncated: z.boolean(),
+
+  redirects: z
+    .array(z.string())
+    .meta({ description: 'URLs followed after the requested one, in order' }),
+});
+
+export type MetadataDocument = z.infer<typeof MetadataDocument>;
+
+export const Metadata = z
+  .object({
+    resolvedUrl: z.string(),
+    requestedUrl: z.string(),
+
+    document: MetadataDocument.optional().meta({
+      description:
+        'Present on extraction responses; omitted when the metadata feeds an analysis',
+    }),
+
+    general: General,
+    opengraph: Opengraph,
+    twitter: Twitter,
+    mobile: Mobile,
+    crawler: Crawler,
+  })
+  .meta({ id: 'Metadata' });
+
+export type Metadata = z.infer<typeof Metadata>;

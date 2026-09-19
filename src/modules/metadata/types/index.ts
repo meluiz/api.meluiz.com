@@ -1,4 +1,4 @@
-export type {
+export {
   AlternatePageSignal,
   Analysis,
   AnalysisCategory,
@@ -30,7 +30,7 @@ export type {
   RobotsSignals,
   SitemapSignals,
 } from './analysis';
-export type {
+export {
   Alternate,
   Author,
   Crawler,

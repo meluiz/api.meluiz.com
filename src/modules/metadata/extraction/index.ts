@@ -51,6 +51,8 @@ export type { IconCandidate, IconFormat, IconPurpose, IconSource } from './extra
 
 export { createExtractorContext } from './context';
 export {
+  ASSUMED_APPLE_SIZE,
+  ASSUMED_DEFAULT_SIZE,
   candidatesFromManifest,
   extractCrawler,
   extractGeneral,
@@ -60,4 +62,5 @@ export {
   extractOpengraph,
   extractTwitter,
   rankCandidates,
+  SCALABLE_SIZE,
 } from './extractors';

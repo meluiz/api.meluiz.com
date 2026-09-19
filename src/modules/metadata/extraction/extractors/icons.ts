@@ -19,9 +19,9 @@ export interface IconCandidate {
 
 /* ///////////////////////////////////////////////// */
 
-const ASSUMED_APPLE_SIZE = 180;
-const ASSUMED_DEFAULT_SIZE = 32;
-const SCALABLE_SIZE = Number.POSITIVE_INFINITY;
+export const ASSUMED_APPLE_SIZE = 180;
+export const ASSUMED_DEFAULT_SIZE = 32;
+export const SCALABLE_SIZE = Number.POSITIVE_INFINITY;
 const UNDERSIZED_PENALTY = 10_000;
 
 const ICON_RELS = ['icon', 'apple-touch-icon', 'apple-touch-icon-precomposed'] as const;

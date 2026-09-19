@@ -1,6 +1,7 @@
 import type { Fetcher, HostResolver } from '@/shared/remote';
 import type { FetchDocumentOptions } from './document';
-import type { AssetOptions, FaviconAsset, IconCandidate } from './favicon';
+import type { IconCandidate } from './extraction';
+import type { AssetOptions, FaviconAsset } from './favicon';
 import type { AnalysisContext, AnalysisMode } from './types';
 
 import { BadGatewayError, ServerError } from '@/core/http';
@@ -12,15 +13,18 @@ import {
   extractDocumentSignals,
 } from './analysis';
 import { fetchDocument } from './document';
-import { createExtractorContext, extractMetadata } from './extraction';
+import {
+  createExtractorContext,
+  extractIconCandidates,
+  extractManifestUrl,
+  extractMetadata,
+  rankCandidates,
+} from './extraction';
 import {
   conventionalCandidates,
-  extractFaviconCandidates,
-  extractManifestUrl,
   googleCandidate,
   loadCandidate,
   loadManifestCandidates,
-  rankCandidates,
 } from './favicon';
 
 /* ///////////////////////////////////////////////// */
@@ -159,7 +163,7 @@ const declaredCandidates = async (
 
   // One context for both lookups: they share the same DOM index
   const ctx = createExtractorContext(document.root, document.url);
-  const candidates = extractFaviconCandidates(ctx);
+  const candidates = extractIconCandidates(ctx);
   const manifestUrl = extractManifestUrl(ctx);
 
   if (manifestUrl) {

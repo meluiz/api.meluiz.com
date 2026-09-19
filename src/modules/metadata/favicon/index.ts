@@ -73,15 +73,6 @@ export const decodeAssetHash = (hash: string) => {
 /* ///////////////////////////////////////////////// */
 
 export type { AssetOptions, FaviconAsset, FaviconContentType } from './assets';
-export type { IconCandidate, IconFormat, IconPurpose, IconSource } from './candidates';
 
 export { loadCandidate, loadManifestCandidates } from './assets';
-export {
-  candidatesFromManifest,
-  conventionalCandidates,
-  extractFaviconCandidates,
-  extractManifestUrl,
-  GOOGLE_FAVICON_SIZE,
-  googleCandidate,
-  rankCandidates,
-} from './candidates';
+export { conventionalCandidates, GOOGLE_FAVICON_SIZE, googleCandidate } from './candidates';

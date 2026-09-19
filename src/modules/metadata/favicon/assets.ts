@@ -1,10 +1,10 @@
 import type { Fetcher, HostResolver } from '@/shared/remote';
-import type { IconCandidate, IconSource } from './candidates';
+import type { IconCandidate, IconSource } from '../extraction';
 
 import { BadGatewayError } from '@/core/http';
 import { discard, readBody, safeFetch } from '@/shared/remote';
 
-import { candidatesFromManifest } from './candidates';
+import { candidatesFromManifest } from '../extraction';
 
 /* ///////////////////////////////////////////////// */
 

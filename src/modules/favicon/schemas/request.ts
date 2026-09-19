@@ -20,7 +20,7 @@ export const GetFaviconQuery = z.object({
 export const GetFaviconAssetParam = z.object({
   hash: z.string().min(1).meta({
     description:
-      'Site URL encoded as base64url, optionally followed by an extension, as in aHR0cHM6Ly9tZWx1aXouY29t.png',
-    example: 'aHR0cHM6Ly9tZWx1aXouY29t.png',
+      'Site URL encoded as base64url, optionally followed by an extension, as in aHR0cHM6Ly9tZWx1aXouY29tLw.png. Returned by every icon response as X-Favicon-Hash.',
+    example: 'aHR0cHM6Ly9tZWx1aXouY29tLw.png',
   }),
 });

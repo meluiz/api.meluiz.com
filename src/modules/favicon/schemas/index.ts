@@ -4,4 +4,4 @@
  */
 
 export { GetFaviconAssetParam, GetFaviconQuery } from './request';
-export { IMAGE_RESPONSE } from './response';
+export { FALLBACK_RESPONSE, IMAGE_RESPONSE } from './response';

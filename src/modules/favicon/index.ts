@@ -4,9 +4,11 @@
  */
 
 export type { AssetOptions, FaviconAsset, FaviconContentType } from './assets';
+export type { FallbackAsset } from './fallback';
 export type { GetFaviconOptions } from './service';
 
-export { ASSET_SIZE } from './hash';
+export { FALLBACK_ASSET, FALLBACK_SIZE } from './fallback';
+export { ASSET_SIZE, encodeAssetHash } from './hash';
 export { favicon, faviconStatic } from './routes';
 export { GetFaviconQuery } from './schemas';
 export { getFaviconByUrl } from './service';

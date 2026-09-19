@@ -6,8 +6,13 @@ import { describeRoute } from 'hono-openapi';
 import { BadGatewayError, toErrorResponse, validate } from '@/core/http';
 
 import { ASSET_SIZE, decodeAssetHash } from './hash';
-import { toImageResponse } from './response';
-import { GetFaviconAssetParam, GetFaviconQuery, IMAGE_RESPONSE } from './schemas';
+import { toImageFallbackResponse, toImageResponse } from './response';
+import {
+  FALLBACK_RESPONSE,
+  GetFaviconAssetParam,
+  GetFaviconQuery,
+  IMAGE_RESPONSE,
+} from './schemas';
 import { getFaviconByUrl } from './service';
 
 /* ///////////////////////////////////////////////// */
@@ -30,18 +35,32 @@ favicon.get(
     operationId: 'getFavicon',
     summary: 'Get a favicon',
     description:
-      'Returns the best icon of a site: declared in the page or its manifest, then conventional locations such as /favicon.ico, then Google as a last resort.',
+      'Returns the best icon of a site: declared in the page or its manifest, then conventional locations such as /favicon.ico, then Google as a last resort. When none of those answers, a placeholder icon is served with a 404.',
     responses: {
       200: IMAGE_RESPONSE,
-      ...toErrorResponse(400, 422, 429, 502),
+      404: FALLBACK_RESPONSE,
+      ...toErrorResponse(400, 422, 429),
     },
   }),
   validate('query', GetFaviconQuery),
   async (ctx) => {
     const { size, url } = ctx.req.valid('query');
-    const asset = await getFaviconByUrl(url, size, { signal: ctx.req.raw.signal });
 
-    return toImageResponse(asset);
+    try {
+      const asset = await getFaviconByUrl(url, size, {
+        signal: ctx.req.raw.signal,
+      });
+
+      return toImageResponse(asset, url);
+    } catch (cause) {
+      // A site with no reachable icon still gets an image; a rejected URL is
+      // the caller's mistake and keeps its error
+      if (cause instanceof BadGatewayError) {
+        return toImageFallbackResponse();
+      }
+
+      throw cause;
+    }
   },
 );
 
@@ -53,10 +72,11 @@ faviconStatic.get(
     tags: ['Favicon'],
     operationId: 'getFaviconAsset',
     summary: 'Get a favicon by hash',
-    description: `Stable, cacheable URL for embedding a site icon in an <img>. Icons are ${ASSET_SIZE}px. Any failure to find one answers 404, so the image falls back cleanly.`,
+    description: `Stable, cacheable URL for embedding a site icon in an <img>. Icons are ${ASSET_SIZE}px. Anything that yields no icon \u2014 an undecodable hash, a site without one \u2014 answers 404 with the placeholder, so the image never breaks.`,
     responses: {
       200: IMAGE_RESPONSE,
-      ...toErrorResponse(400, 404, 429),
+      404: FALLBACK_RESPONSE,
+      ...toErrorResponse(400, 429),
     },
   }),
   validate('param', GetFaviconAssetParam),
@@ -65,16 +85,20 @@ faviconStatic.get(
     const url = decodeAssetHash(hash);
 
     if (!url) {
-      return ctx.notFound();
+      return toImageFallbackResponse();
     }
 
     try {
-      const asset = await getFaviconByUrl(url, ASSET_SIZE, { signal: ctx.req.raw.signal });
-      return toImageResponse(asset);
+      const asset = await getFaviconByUrl(url, ASSET_SIZE, {
+        signal: ctx.req.raw.signal,
+      });
+
+      return toImageResponse(asset, url);
     } catch (cause) {
-      // An <img> cannot show an error body; a 404 lets it fall back instead
+      // An <img> cannot show an error body, so a site without a usable icon
+      // gets the placeholder instead of a broken image
       if (cause instanceof BadGatewayError) {
-        return ctx.notFound();
+        return toImageFallbackResponse();
       }
 
       throw cause;

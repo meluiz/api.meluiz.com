@@ -13,6 +13,7 @@
     "@motiro/string": "^0.1.3",
     "envin": "^1.2.0",
     "hono": "^4.13.7",
+    "hono-openapi": "^1.3.3",
     "hono-rate-limiter": "^0.5.4",
     "node-html-parser": "^9.0.4",
     "zod": "^4.5.4"

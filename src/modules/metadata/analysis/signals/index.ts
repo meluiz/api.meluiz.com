@@ -1,17 +1,7 @@
-export type {
-  DeepAnalysisOptions,
-  ProbeContext,
-  ProbeFailure,
-} from './remote';
+/*
+ * Signal collectors. `deep.ts` composes the individual inspectors by relative
+ * path, so only what the analysis layer itself consumes is re-exported here.
+ */
 
 export { extractDocumentSignals } from './document';
-export { detectLanguage } from './language';
-export {
-  collectDeepAnalysisSignals,
-  describeFailure,
-  inspectAlternate,
-  inspectImage,
-  inspectRobots,
-  inspectSitemap,
-  probe,
-} from './remote';
+export { collectDeepAnalysisSignals } from './remote';

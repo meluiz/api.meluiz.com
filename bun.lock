@@ -5,6 +5,7 @@
     "": {
       "dependencies": {
         "@hono/zod-validator": "^0.9.1",
+        "@motiro/guard": "^0.1.2",
         "@motiro/string": "^0.1.3",
         "@scalar/hono-api-reference": "^0.12.1",
         "add": "^2.0.9",
@@ -18,6 +19,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.5.12",
+        "@motiro/types": "^0.1.1",
         "@types/bun": "latest",
         "@types/node": "^26.4.1",
         "picocolors": "^1.1.1",
@@ -52,7 +54,11 @@
 
     "@hono/zod-validator": ["@hono/zod-validator@0.9.1", "", { "peerDependencies": { "hono": ">=4.11.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-iiv6w0qrIc0arfvCtUqBWsvl4fXjzaTcQcCJTTtCnkawF9HHGE+KjEl0ox3gQJ6rKZEgE3mLExlQCF72M+mNuw=="],
 
+    "@motiro/guard": ["@motiro/guard@0.1.2", "", {}, "sha512-1GDsAtV+QYlgUxGhcjkFIxJRlFV9A8MuYtdHRPmBOr2TyD5n07mJOYofCEAoijIzyKZY+WGT0Uct4iDe7F96dw=="],
+
     "@motiro/string": ["@motiro/string@0.1.3", "", {}, "sha512-H4QDdhpbFG5+GG0/1tBa115gIcTexfzD7uKoLfp2WGhJyyz1iCuNr6oryvDpU5EoTflJov2rNkM8mDtTdP39Gg=="],
+
+    "@motiro/types": ["@motiro/types@0.1.1", "", {}, "sha512-PFl+c0YNCd0CwzCZXxh1yiNxkA0qrxL2h2uwGLsZrjp0F+1t9HEDN1IitOuEhGpLOKokuZQcXX9LkytpK1eddg=="],
 
     "@oven/bun-darwin-aarch64": ["@oven/bun-darwin-aarch64@1.4.2", "", { "os": "darwin", "cpu": "arm64" }, "sha512-MXdZkP1featqxZ+/VTXWG1BVjM4OGBehVY2Q88EeUj/7L0UMeCGItmyPYTN+wxvlGJ6F66JEtzsw+GvQWewnag=="],
 

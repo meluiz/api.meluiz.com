@@ -1,3 +1,9 @@
+/*
+ * The request and response contracts of the module. Request schemas validate
+ * what comes in; the rest are the Zod schemas the responses and the OpenAPI
+ * document are both derived from.
+ */
+
 export {
   AlternatePageSignal,
   Analysis,
@@ -51,3 +57,10 @@ export {
   Twitter,
   TwitterLabel,
 } from './metadata';
+export {
+  ClientHeaders,
+  GetFaviconAssetParam,
+  GetFaviconQuery,
+  GetMetadataAnalysisQuery,
+  GetMetadataQuery,
+} from './request';

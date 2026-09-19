@@ -3,25 +3,16 @@ import type { ServerContext } from '@/core/http';
 import { Hono } from 'hono';
 import { describeRoute } from 'hono-openapi';
 
-import {
-  BadGatewayError,
-  toErrorResponse,
-  toJsonResponse,
-  toResponse,
-  validate,
-} from '@/core/http';
+import { toErrorResponse, toJsonResponse, toResponse, validate } from '@/core/http';
 
-import { ASSET_SIZE, decodeAssetHash, IMAGE_RESPONSE, toImageResponse } from './favicon';
 import {
   Analysis,
   ClientHeaders,
-  GetFaviconAssetParam,
-  GetFaviconQuery,
   GetMetadataAnalysisQuery,
   GetMetadataQuery,
   Metadata,
 } from './schemas';
-import { getFaviconByUrl, getMetadataAnalysisByUrl, getMetadataByUrl } from './service';
+import { getMetadataAnalysisByUrl, getMetadataByUrl } from './service';
 
 /* ///////////////////////////////////////////////// */
 
@@ -30,7 +21,6 @@ const RESPONSE_ERRORS = toErrorResponse(400, 422, 429, 502);
 /* ///////////////////////////////////////////////// */
 
 export const metadata = new Hono<ServerContext>();
-export const metadataStatic = new Hono<ServerContext>();
 
 metadata.get(
   '/',
@@ -88,64 +78,5 @@ metadata.get(
     });
 
     return toResponse(ctx, { status: 200, data: payload });
-  },
-);
-
-/* ///////////////////////////////////////////////// */
-
-metadata.get(
-  '/favicon',
-  describeRoute({
-    tags: ['Favicon'],
-    operationId: 'getFavicon',
-    summary: 'Get a favicon',
-    description:
-      'Returns the best icon of a site: declared in the page or its manifest, then conventional locations such as /favicon.ico, then Google as a last resort.',
-    responses: {
-      200: IMAGE_RESPONSE,
-      ...toErrorResponse(400, 422, 429, 502),
-    },
-  }),
-  validate('query', GetFaviconQuery),
-  async (ctx) => {
-    const { size, url } = ctx.req.valid('query');
-    const asset = await getFaviconByUrl(url, size, { signal: ctx.req.raw.signal });
-
-    return toImageResponse(asset);
-  },
-);
-
-metadataStatic.get(
-  '/favicon/:hash',
-  describeRoute({
-    tags: ['Favicon'],
-    operationId: 'getFaviconAsset',
-    summary: 'Get a favicon by hash',
-    description: `Stable, cacheable URL for embedding a site icon in an <img>. Icons are ${ASSET_SIZE}px. Any failure to find one answers 404, so the image falls back cleanly.`,
-    responses: {
-      200: IMAGE_RESPONSE,
-      ...toErrorResponse(400, 404, 429),
-    },
-  }),
-  validate('param', GetFaviconAssetParam),
-  async (ctx) => {
-    const url = decodeAssetHash(ctx.req.valid('param').hash);
-
-    if (!url) {
-      return ctx.notFound();
-    }
-
-    try {
-      const asset = await getFaviconByUrl(url, ASSET_SIZE, { signal: ctx.req.raw.signal });
-
-      return toImageResponse(asset);
-    } catch (cause) {
-      // An <img> cannot show an error body; a 404 lets it fall back instead
-      if (cause instanceof BadGatewayError) {
-        return ctx.notFound();
-      }
-
-      throw cause;
-    }
   },
 );

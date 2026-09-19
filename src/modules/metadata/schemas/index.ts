@@ -57,10 +57,4 @@ export {
   Twitter,
   TwitterLabel,
 } from './metadata';
-export {
-  ClientHeaders,
-  GetFaviconAssetParam,
-  GetFaviconQuery,
-  GetMetadataAnalysisQuery,
-  GetMetadataQuery,
-} from './request';
+export { ClientHeaders, GetMetadataAnalysisQuery, GetMetadataQuery } from './request';

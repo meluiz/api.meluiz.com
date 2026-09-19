@@ -1,11 +1,6 @@
 import type { FaviconAsset } from './assets';
 
-import { UrlSchema } from '@/shared/schemas';
-
 /* ///////////////////////////////////////////////// */
-
-// Icons behind /assets are embedded in pages, so they have one fixed size
-export const ASSET_SIZE = 64;
 
 // Found icons are stable for a day; Google's fallback may be replaced by a real
 // icon soon, so it is cached briefly
@@ -17,23 +12,6 @@ export const FALLBACK_CACHE = 'public, max-age=1800, stale-if-error=86400';
 // external loads, only inline styles
 export const SVG_CONTENT_SECURITY_POLICY =
   "default-src 'none'; style-src 'unsafe-inline'; sandbox";
-
-export const BINARY = { schema: { type: 'string' as const, format: 'binary' } };
-
-export const IMAGE_RESPONSE = {
-  description: 'The favicon: PNG resized to fit the requested size, or the original SVG or ICO',
-  headers: {
-    'X-Favicon-Source': {
-      description: 'Where the icon came from: html, manifest, conventional or google',
-      schema: { type: 'string' as const, enum: ['html', 'manifest', 'conventional', 'google'] },
-    },
-  },
-  content: {
-    'image/png': BINARY,
-    'image/svg+xml': BINARY,
-    'image/x-icon': BINARY,
-  },
-};
 
 /* ///////////////////////////////////////////////// */
 
@@ -56,23 +34,3 @@ export const toImageResponse = (asset: FaviconAsset) => {
 
   return new Response(asset.bytes, { status: 200, headers });
 };
-
-/** Site URL from an asset hash; `undefined` when it does not decode to a valid URL. */
-export const decodeAssetHash = (hash: string) => {
-  const encoded = hash.split('.')[0];
-
-  if (!encoded) {
-    return undefined;
-  }
-
-  const result = UrlSchema.safeParse(Buffer.from(encoded, 'base64url').toString());
-
-  return result.success ? result.data : undefined;
-};
-
-/* ///////////////////////////////////////////////// */
-
-export type { AssetOptions, FaviconAsset, FaviconContentType } from './assets';
-
-export { loadCandidate, loadManifestCandidates } from './assets';
-export { conventionalCandidates, GOOGLE_FAVICON_SIZE, googleCandidate } from './candidates';

@@ -1,6 +1,10 @@
-import type { IconCandidate } from '../extraction';
+import type { IconCandidate } from '../metadata/extraction';
 
-import { ASSUMED_APPLE_SIZE, ASSUMED_DEFAULT_SIZE, SCALABLE_SIZE } from '../extraction';
+import {
+  ASSUMED_APPLE_SIZE,
+  ASSUMED_DEFAULT_SIZE,
+  SCALABLE_SIZE,
+} from '../metadata/extraction';
 
 /* ///////////////////////////////////////////////// */
 

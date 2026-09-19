@@ -12,7 +12,8 @@ import {
   rateLimit,
   requestId,
 } from './core/middlewares';
-import { metadata, metadataStatic } from './modules/metadata';
+import { favicon, faviconStatic } from './modules/favicon';
+import { metadata } from './modules/metadata';
 
 const hono = new Hono<ServerContext>();
 
@@ -30,7 +31,9 @@ hono.notFound(onNotFound);
 /* ------- routes ------- */
 
 hono.route('/metadata', metadata);
-hono.route('/static', metadataStatic);
+hono.route('/metadata', favicon);
+
+hono.route('/static', faviconStatic);
 
 /* ------- openapi ------- */
 

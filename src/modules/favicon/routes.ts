@@ -2,10 +2,8 @@ import type { ServerContext } from '@/core/http';
 
 import { Hono } from 'hono';
 import { describeRoute } from 'hono-openapi';
-import { z } from 'zod';
 
 import { BadGatewayError, toErrorResponse, validate } from '@/core/http';
-import { createStore } from '@/shared/store';
 
 import { ASSET_SIZE, decodeAssetHash } from './hash';
 import { toImageResponse } from './response';
@@ -49,35 +47,6 @@ favicon.get(
 
 /* ///////////////////////////////////////////////// */
 
-const uint8ArraySchema: z.ZodType<Uint8Array<ArrayBufferLike>> = z.instanceof(Uint8Array);
-
-const AssetKeyEntry = z.object({
-  url: z.string(),
-  bytes: z.string(),
-  source: z.enum(['html', 'manifest', 'conventional', 'google']),
-  contentType: z.enum(['image/png', 'image/svg+xml', 'image/x-icon']),
-  createdAt: z.iso.datetime(),
-});
-
-const store = createStore({
-  namespace: 'favicons',
-  prefix: 'asset-key',
-  schema: AssetKeyEntry,
-});
-
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
-function uint8ArrayToBase64(data: Uint8Array): string {
-  return btoa(String.fromCharCode(...data));
-}
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
-}
-
 faviconStatic.get(
   '/favicon/:hash',
   describeRoute({
@@ -93,17 +62,6 @@ faviconStatic.get(
   validate('param', GetFaviconAssetParam),
   async (ctx) => {
     const { hash } = ctx.req.valid('param');
-
-    const exists = await store.get(hash);
-
-    if (exists) {
-      const decoded = base64ToUint8Array(exists.bytes);
-      return toImageResponse({
-        ...exists,
-        bytes: decoded,
-      });
-    }
-
     const url = decodeAssetHash(hash);
 
     if (!url) {
@@ -112,19 +70,6 @@ faviconStatic.get(
 
     try {
       const asset = await getFaviconByUrl(url, ASSET_SIZE, { signal: ctx.req.raw.signal });
-
-      const base64 = uint8ArrayToBase64(asset.bytes);
-
-      store
-        .set(
-          hash,
-          { ...asset, bytes: base64, url, createdAt: new Date().toISOString() },
-          { ttl: 86400 },
-        )
-        .catch((error) => {
-          console.error(error, 'Failed to cache favicon');
-        });
-
       return toImageResponse(asset);
     } catch (cause) {
       // An <img> cannot show an error body; a 404 lets it fall back instead

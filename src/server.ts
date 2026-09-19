@@ -12,7 +12,7 @@ import {
   rateLimit,
   requestId,
 } from './core/middlewares';
-import { metadata } from './modules/metadata';
+import { metadata, metadataStatic } from './modules/metadata';
 
 const hono = new Hono<ServerContext>();
 
@@ -30,6 +30,7 @@ hono.notFound(onNotFound);
 /* ------- routes ------- */
 
 hono.route('/metadata', metadata);
+hono.route('/static', metadataStatic);
 
 /* ------- openapi ------- */
 

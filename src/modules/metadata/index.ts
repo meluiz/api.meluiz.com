@@ -1,3 +1,3 @@
-export { metadata } from './metadata.routes';
-export { ClientHeaders, GetMetadataQuery } from './metadata.schemas';
-export { getMetadataByUrl } from './metadata.service';
+export { metadata } from './routes';
+export { ClientHeaders, GetMetadataQuery } from './schemas';
+export { getMetadataByUrl } from './service';

@@ -4,8 +4,8 @@ import { Hono } from 'hono';
 
 import { toResponse, validate } from '@/core/http';
 
-import { ClientHeaders, GetMetadataAnalysisQuery, GetMetadataQuery } from './metadata.schemas';
-import { getMetadataAnalysisByUrl, getMetadataByUrl } from './metadata.service';
+import { ClientHeaders, GetMetadataAnalysisQuery, GetMetadataQuery } from './schemas';
+import { getMetadataAnalysisByUrl, getMetadataByUrl } from './service';
 
 /* ///////////////////////////////////////////////// */
 

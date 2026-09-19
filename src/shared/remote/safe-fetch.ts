@@ -12,6 +12,15 @@ const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 /* ///////////////////////////////////////////////// */
 
+/** Thrown when a resource keeps redirecting past the allowed number of hops. */
+export class TooManyRedirectsError extends BadGatewayError {
+  constructor() {
+    super('Too many redirects were followed');
+  }
+}
+
+/* ///////////////////////////////////////////////// */
+
 export interface SafeFetchOptions {
   signal: AbortSignal;
   headers?: Record<string, string>;
@@ -85,7 +94,7 @@ export const safeFetch = async (
     await discard(response);
 
     if (hop >= maxRedirects) {
-      throw new BadGatewayError('Too many redirects were followed');
+      throw new TooManyRedirectsError();
     }
 
     const next = URL.parse(location, url);

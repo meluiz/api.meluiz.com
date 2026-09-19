@@ -21,9 +21,12 @@ export interface ReadBodyResult {
 
 /* ///////////////////////////////////////////////// */
 
-const tooLarge = () => {
-  return new BadGatewayError('The remote resource is too large');
-};
+/** Thrown when overflow is 'throw' and the body exceeds maxBytes. */
+export class ResourceTooLargeError extends BadGatewayError {
+  constructor(maxBytes: number) {
+    super(`The remote resource exceeds the ${maxBytes}-byte limit`);
+  }
+}
 
 const concat = (chunks: Uint8Array[], size: number) => {
   const bytes = new Uint8Array(size);
@@ -52,7 +55,7 @@ export const readBody = async (
     // Reject early when the server already announces an oversized body
     if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
       await discard(response);
-      throw tooLarge();
+      throw new ResourceTooLargeError(maxBytes);
     }
   }
 
@@ -78,7 +81,7 @@ export const readBody = async (
 
       if (value.byteLength > remaining) {
         if (overflow === 'throw') {
-          throw tooLarge();
+          throw new ResourceTooLargeError(maxBytes);
         }
 
         chunks.push(value.subarray(0, remaining));

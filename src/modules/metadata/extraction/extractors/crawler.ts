@@ -1,4 +1,4 @@
-import type { Crawler } from '../../types';
+import type { Crawler } from '../../schemas';
 import type { ExtractorContext } from '../context';
 
 export const extractCrawler = (ctx: ExtractorContext): Crawler => {

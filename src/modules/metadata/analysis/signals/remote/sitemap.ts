@@ -1,4 +1,4 @@
-import type { SitemapSignals } from '../../../types/analysis';
+import type { SitemapSignals } from '../../../schemas';
 import type { ProbeContext } from './probe';
 
 import { mapWithConcurrency } from '@/shared/concurrency';

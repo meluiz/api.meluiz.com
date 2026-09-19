@@ -1,5 +1,5 @@
 import type { HTMLElement } from 'node-html-parser';
-import type { Metadata, MetadataDocument } from '../types';
+import type { Metadata, MetadataDocument } from '../schemas';
 
 import { InternalServerError } from '@/core/http';
 

@@ -1,4 +1,4 @@
-import type { AnalysisOutcome } from '../../types';
+import type { AnalysisOutcome } from '../../schemas';
 import type { CheckFactory } from './types';
 
 import { compareUrl, parseHttpUrl } from '@/shared/url';

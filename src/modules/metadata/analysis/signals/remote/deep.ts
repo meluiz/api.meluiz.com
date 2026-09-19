@@ -1,5 +1,5 @@
 import type { Fetcher, HostResolver } from '@/shared/remote';
-import type { DeepAnalysisSignals, Metadata, RemoteResourceKind } from '../../../types';
+import type { DeepAnalysisSignals, Metadata, RemoteResourceKind } from '../../../schemas';
 import type { ProbeContext } from './probe';
 
 import { mapWithConcurrency } from '@/shared/concurrency';

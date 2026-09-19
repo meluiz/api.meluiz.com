@@ -1,4 +1,4 @@
-import type { AnalysisContext } from '../types';
+import type { AnalysisContext } from '../schemas';
 
 /* ///////////////////////////////////////////////// */
 

@@ -1,4 +1,4 @@
-import type { RobotsSignals } from '../../../types/analysis';
+import type { RobotsSignals } from '../../../schemas/analysis';
 import type { ProbeContext } from './probe';
 
 import { discard, readBody } from '@/shared/remote';

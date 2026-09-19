@@ -1,4 +1,4 @@
-import type { AnalysisCategoryId, AnalysisCheck, CheckInput } from '../../types';
+import type { AnalysisCategoryId, AnalysisCheck, CheckInput } from '../../schemas';
 
 /**
  * A check reads the metadata and context and returns its result. It returns

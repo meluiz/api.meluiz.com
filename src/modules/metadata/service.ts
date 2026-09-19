@@ -2,7 +2,7 @@ import type { Fetcher, HostResolver } from '@/shared/remote';
 import type { FetchDocumentOptions } from './document';
 import type { IconCandidate } from './extraction';
 import type { AssetOptions, FaviconAsset } from './favicon';
-import type { AnalysisContext, AnalysisMode } from './types';
+import type { AnalysisContext, AnalysisMode } from './schemas';
 
 import { BadGatewayError, ServerError } from '@/core/http';
 import { assertSafeRemoteUrl } from '@/shared/remote';

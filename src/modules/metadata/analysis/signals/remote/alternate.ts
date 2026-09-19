@@ -1,13 +1,13 @@
-import type { AlternatePageSignal } from '../../../types/analysis';
+import type { AlternatePageSignal } from '../../../schemas';
 import type { ProbeContext } from './probe';
 
 import parse from 'node-html-parser';
 
-import { decodeDocument } from '@/modules/metadata/document';
-import { createExtractorContext } from '@/modules/metadata/extraction/context';
 import { discard, readBody } from '@/shared/remote';
 import { getComparableUrl } from '@/shared/url';
 
+import { decodeDocument } from '../../../document';
+import { createExtractorContext } from '../../../extraction/context';
 import { describeFailure, probe } from './probe';
 
 /* ///////////////////////////////////////////////// */

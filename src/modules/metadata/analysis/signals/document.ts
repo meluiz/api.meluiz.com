@@ -1,5 +1,5 @@
 import type { HTMLElement, Node } from 'node-html-parser';
-import type { DocumentSignals } from '../../types/analysis';
+import type { DocumentSignals } from '../../schemas';
 
 import { NodeType } from 'node-html-parser';
 

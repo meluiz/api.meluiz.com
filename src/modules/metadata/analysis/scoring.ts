@@ -9,7 +9,7 @@ import type {
   AnalysisStatus,
   AnalysisSummary,
   AnalysisValue,
-} from '../types';
+} from '../schemas';
 
 /* ///////////////////////////////////////////////// */
 

@@ -1,5 +1,5 @@
 import type { HTMLElement } from 'node-html-parser';
-import type { Mobile, TouchIcon } from '../../types';
+import type { Mobile, TouchIcon } from '../../schemas';
 import type { ExtractorContext } from '../context';
 
 export const extractMobile = (ctx: ExtractorContext): Mobile => {

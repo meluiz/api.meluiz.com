@@ -1,4 +1,4 @@
-import type { Opengraph, OpengraphImage, OpengraphMedia } from '../../types';
+import type { Opengraph, OpengraphImage, OpengraphMedia } from '../../schemas';
 import type { ExtractorContext } from '../context';
 
 /* ///////////////////////////////////////////////// */

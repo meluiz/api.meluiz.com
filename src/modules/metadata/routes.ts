@@ -13,14 +13,15 @@ import {
 
 import { ASSET_SIZE, decodeAssetHash, IMAGE_RESPONSE, toImageResponse } from './favicon';
 import {
+  Analysis,
   ClientHeaders,
   GetFaviconAssetParam,
   GetFaviconQuery,
   GetMetadataAnalysisQuery,
   GetMetadataQuery,
+  Metadata,
 } from './schemas';
 import { getFaviconByUrl, getMetadataAnalysisByUrl, getMetadataByUrl } from './service';
-import { Analysis, Metadata } from './types';
 
 /* ///////////////////////////////////////////////// */
 

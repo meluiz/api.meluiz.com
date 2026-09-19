@@ -5,7 +5,7 @@ import type {
   AnalysisContext,
   CheckInput,
   Metadata,
-} from '../types';
+} from '../schemas';
 import type { CheckFactory } from './checks';
 
 import { CATEGORIES } from './checks';

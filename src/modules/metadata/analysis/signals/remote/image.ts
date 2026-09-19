@@ -1,4 +1,4 @@
-import type { RemoteResourceKind, RemoteResourceSignal } from '../../../types/analysis';
+import type { RemoteResourceKind, RemoteResourceSignal } from '../../../schemas';
 import type { ProbeContext } from './probe';
 
 import { discard, readBody } from '@/shared/remote';

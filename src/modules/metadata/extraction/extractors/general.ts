@@ -1,6 +1,6 @@
 import type { Dict } from '@motiro/types';
 import type { HTMLElement } from 'node-html-parser';
-import type { Author, General, StructuredData, StructuredDataIssue } from '../../types';
+import type { Author, General, StructuredData, StructuredDataIssue } from '../../schemas';
 import type { ExtractorContext } from '../context';
 
 import { isObject } from '@motiro/guard';

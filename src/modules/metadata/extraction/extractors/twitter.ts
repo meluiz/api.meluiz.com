@@ -1,4 +1,4 @@
-import type { Twitter, TwitterLabel } from '../../types';
+import type { Twitter, TwitterLabel } from '../../schemas';
 import type { ExtractorContext } from '../context';
 
 export const extractTwitter = (ctx: ExtractorContext): Twitter => {

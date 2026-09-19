@@ -1,4 +1,4 @@
-import type { DetectedLanguage } from '../../types/analysis';
+import type { DetectedLanguage } from '../../schemas';
 
 import { getWordsOf } from '@/shared/text';
 

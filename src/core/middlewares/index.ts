@@ -1,7 +1,4 @@
-export type { CacheOptions } from './cache';
-
 export { bodyLimit } from './body-limit';
-export { cache } from './cache';
 export { cors } from './cors';
 export { onError, onNotFound } from './error';
 export { logger } from './logger';

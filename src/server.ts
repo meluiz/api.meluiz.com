@@ -11,6 +11,7 @@ import {
   rateLimit,
   requestId,
 } from './core/middlewares';
+import { metadata } from './modules/metadata';
 
 const hono = new Hono<ServerContext>();
 
@@ -24,5 +25,9 @@ hono.use('*', logger);
 
 hono.onError(onError);
 hono.notFound(onNotFound);
+
+/* ------- routes ------- */
+
+hono.route('/metadata', metadata);
 
 export default hono;

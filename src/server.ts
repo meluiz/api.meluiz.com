@@ -1,9 +1,8 @@
 import type { ServerContext } from './core/http';
 
-import { Scalar } from '@scalar/hono-api-reference';
 import { Hono } from 'hono';
-import { openAPIRouteHandler } from 'hono-openapi';
 
+import { registerDocumentation } from './core/http';
 import {
   bodyLimit,
   cors,
@@ -34,18 +33,6 @@ hono.route('/metadata', metadata);
 
 /* ------- openapi ------- */
 
-hono.get('/docs', Scalar({ theme: 'saturn', title: 'api.meluiz.com', url: '/openapi.json' }));
-hono.get(
-  '/openapi.json',
-  openAPIRouteHandler(hono, {
-    documentation: {
-      info: {
-        version: '0.1.0',
-        title: 'api.meluiz.com',
-        description: 'API for meluiz.com services',
-      },
-    },
-  }),
-);
+registerDocumentation(hono);
 
 export default hono;

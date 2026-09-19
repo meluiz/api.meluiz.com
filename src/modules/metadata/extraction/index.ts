@@ -43,3 +43,21 @@ export const extractMetadata = (
     throw new InternalServerError('Failed to extract metadata', undefined, cause);
   }
 };
+
+/* ///////////////////////////////////////////////// */
+
+export type { ExtractorContext } from './context';
+export type { IconCandidate, IconFormat, IconPurpose, IconSource } from './extractors';
+
+export { createExtractorContext } from './context';
+export {
+  candidatesFromManifest,
+  extractCrawler,
+  extractGeneral,
+  extractIconCandidates,
+  extractManifestUrl,
+  extractMobile,
+  extractOpengraph,
+  extractTwitter,
+  rankCandidates,
+} from './extractors';

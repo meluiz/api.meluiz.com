@@ -29,13 +29,24 @@ export interface SafeFetchOptions {
   resolveHost?: HostResolver;
 }
 
+/**
+ * One hop of a redirect chain. The status is what makes the chain auditable:
+ * a 301 and a 302 to the same place mean very different things to a crawler.
+ */
+export interface RedirectHop {
+  to: string;
+  from: string;
+  status: number;
+}
+
 export interface SafeFetchResult {
-  /** Final response; its body has not been read. */
-  response: Response;
   /** URL of the final response, after every redirect. */
   url: string;
-  /** URLs followed after the requested one, in order. */
-  redirects: string[];
+  /** Final response; its body has not been read. */
+  response: Response;
+
+  /** Hops followed after the requested one, in order. */
+  redirects: RedirectHop[];
 }
 
 /* ///////////////////////////////////////////////// */
@@ -61,7 +72,7 @@ export const safeFetch = async (
     signal,
   } = options;
 
-  const redirects: string[] = [];
+  const redirects: RedirectHop[] = [];
 
   let url = input;
 
@@ -81,7 +92,11 @@ export const safeFetch = async (
       throw cause;
     }
 
-    const response = await fetcher(url, { headers, signal, redirect: 'manual' });
+    const response = await fetcher(url, {
+      signal,
+      headers,
+      redirect: 'manual',
+    });
     const location = REDIRECT_STATUSES.has(response.status)
       ? response.headers.get('location')
       : null;
@@ -103,7 +118,10 @@ export const safeFetch = async (
       throw new BadGatewayError('The resource returned an invalid redirect');
     }
 
-    url = next.toString();
-    redirects.push(url);
+    const target = next.toString();
+
+    redirects.push({ from: url, to: target, status: response.status });
+
+    url = target;
   }
 };

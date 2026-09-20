@@ -1,5 +1,5 @@
 export type { ReadBodyOptions, ReadBodyResult } from './read-body';
-export type { SafeFetchOptions, SafeFetchResult } from './safe-fetch';
+export type { RedirectHop, SafeFetchOptions, SafeFetchResult } from './safe-fetch';
 export type { Fetcher } from './types';
 export type { HostResolver, ResolvedAddress } from './url-policy';
 

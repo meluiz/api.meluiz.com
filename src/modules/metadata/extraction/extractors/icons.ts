@@ -1,6 +1,8 @@
 import type { HTMLElement } from 'node-html-parser';
 import type { ExtractorContext } from '../context';
 
+import { isStringifiedNullish } from '@/shared/url';
+
 /* ///////////////////////////////////////////////// */
 
 export type IconFormat = 'svg' | 'ico' | 'raster';
@@ -105,7 +107,7 @@ const classifyFormat = (href: string, type: string | undefined): IconFormat => {
 const resolveIconUrl = (value: string | undefined, base: string) => {
   const normalized = value?.trim();
 
-  if (!normalized) {
+  if (!normalized || isStringifiedNullish(normalized)) {
     return undefined;
   }
 

@@ -1,5 +1,7 @@
 import type { HTMLElement } from 'node-html-parser';
 
+import { isStringifiedNullish } from '@/shared/url';
+
 type Elements = readonly HTMLElement[];
 type ElementIndex = Map<string, HTMLElement[]>;
 
@@ -97,7 +99,8 @@ const indexDocument = (root: HTMLElement) => {
 };
 
 const resolveBaseUrl = (declared: string | undefined, documentUrl: string) => {
-  if (!declared) {
+  // A bogus base would corrupt every relative URL in the document
+  if (!declared || isStringifiedNullish(declared)) {
     return undefined;
   }
 
@@ -194,7 +197,7 @@ export const createExtractorContext = (root: HTMLElement, resolvedUrl: string) =
   const resolve = (value: string | undefined) => {
     const normalized = clean(value);
 
-    if (!normalized) {
+    if (!normalized || isStringifiedNullish(normalized)) {
       return undefined;
     }
 

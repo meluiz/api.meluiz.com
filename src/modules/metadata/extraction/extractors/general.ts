@@ -129,7 +129,10 @@ const validateStructuredDataNode = (
   issues: StructuredDataIssue[],
 ) => {
   if (types.length === 0) {
-    issues.push({ severity: 'error', message: 'A structured-data node has an invalid @type.' });
+    issues.push({
+      severity: 'error',
+      message: 'A structured-data node has an invalid @type.',
+    });
     return;
   }
 

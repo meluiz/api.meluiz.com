@@ -113,21 +113,17 @@ export const extractOpengraph = (ctx: ExtractorContext): Opengraph => {
     }
   }
 
+  // Each media kind is reported only as its array, in declaration order. The
+  // flat aliases that used to sit next to them were strict copies of index 0 and
+  // carried nothing the array did not already say.
   const images = structured['og:image'];
   const videos: OpengraphMedia[] = structured['og:video'];
   const audios: OpengraphMedia[] = structured['og:audio'];
-
-  // Flat fields describe the first declared item, so its alt, size and type
-  // never come from a different image or video further down the page
-  const [image] = images;
-  const [video] = videos;
-  const [audio] = audios;
 
   return {
     type: og('type'),
     title: og('title'),
     url: resolve(og('url')),
-    keywords: og('keywords'),
     siteName: og('site_name'),
     determiner: og('determiner'),
     description: og('description'),
@@ -139,24 +135,14 @@ export const extractOpengraph = (ctx: ExtractorContext): Opengraph => {
     articlePublishedTime: article('published_time'),
     articleExpirationTime: article('expiration_time'),
 
-    audio: audio?.url,
-    audioType: audio?.type,
-    audioSecureUrl: audio?.secureUrl,
     audios,
 
     locale: og('locale'),
     localeAlternate: ogAll('locale:alternate'),
 
     videos,
-    video: video?.url,
-    videoType: video?.type,
-    videoWidth: video?.width,
-    videoHeight: video?.height,
-    videoSecureUrl: video?.secureUrl,
 
     images,
-    image: image?.url,
-    imageAlt: image?.alt,
 
     facebookAppId: meta('fb:app_id'),
     facebookPages: metaAll('fb:pages'),

@@ -16,6 +16,34 @@ const DEFAULT_USER_AGENT = 'facebookexternalhit/1.1';
 
 const HTML_CONTENT_TYPE = /^(?:text\/html|application\/xhtml\+xml)\s*(?:;|$)/i;
 
+/**
+ * Response headers worth reporting. An allowlist, not the whole set: `set-cookie`
+ * and friends would leak session material to every API consumer, and only these
+ * change how a crawler treats the page.
+ */
+const REPORTED_HEADERS = [
+  'x-robots-tag',
+  'link',
+  'content-language',
+  'content-type',
+  'last-modified',
+  'etag',
+] as const;
+
+const pickHeaders = (headers: Headers) => {
+  const picked: Record<string, string> = {};
+
+  for (const name of REPORTED_HEADERS) {
+    const value = headers.get(name);
+
+    if (value) {
+      picked[name] = value;
+    }
+  }
+
+  return picked;
+};
+
 const DOCUMENT_HEADERS = {
   accept: 'text/html, application/xhtml+xml;q=0.9',
   'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -32,6 +60,7 @@ const DOCUMENT_HEADERS = {
 
 export interface FetchDocumentOptions {
   userAgent?: string;
+  acceptLanguage?: string;
   timeout?: number;
   maxBytes?: number;
   signal?: AbortSignal;
@@ -51,6 +80,7 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
     maxBytes = MAX_BYTES,
     maxRedirects = MAX_REDIRECTS,
     userAgent = DEFAULT_USER_AGENT,
+    acceptLanguage = DOCUMENT_HEADERS['accept-language'],
   } = options;
 
   // One budget for the whole operation: DNS, every redirect hop and the body read
@@ -65,7 +95,11 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
       fetcher,
       resolveHost,
       maxRedirects,
-      headers: { ...DOCUMENT_HEADERS, 'user-agent': userAgent },
+      headers: {
+        ...DOCUMENT_HEADERS,
+        'user-agent': userAgent,
+        'accept-language': acceptLanguage,
+      },
     });
 
     const contentType = response.headers.get('content-type') ?? '';
@@ -94,6 +128,8 @@ export const fetchDocument = async (input: string, options: FetchDocumentOptions
       redirects,
       bytes: body.bytes.byteLength,
       truncated: body.truncated,
+      limit: maxBytes,
+      reportedHeaders: pickHeaders(response.headers),
       contentType,
     };
   } catch (cause) {

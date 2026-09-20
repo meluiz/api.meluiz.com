@@ -8,6 +8,7 @@ import {
 } from './analysis';
 import { fetchDocument } from './document';
 import { extractMetadata } from './extraction';
+import { inspectResources } from './resources';
 
 /* ///////////////////////////////////////////////// */
 
@@ -23,20 +24,42 @@ export interface GetMetadataAnalysisOptions extends FetchDocumentOptions {
 
 /* ///////////////////////////////////////////////// */
 
-export const getMetadataByUrl = async (url: string, options: FetchDocumentOptions = {}) => {
-  const document = await fetchDocument(url, options);
+export interface GetMetadataOptions extends FetchDocumentOptions {
+  /** Fetch every declared image to report its real size. Costs one request each. */
+  resources?: boolean;
+}
 
-  return extractMetadata(document.root, {
+export const getMetadataByUrl = async (url: string, options: GetMetadataOptions = {}) => {
+  const { resources = false, ...documentOptions } = options;
+
+  const document = await fetchDocument(url, documentOptions);
+
+  const metadata = extractMetadata(document.root, {
     requestedUrl: url,
     resolvedUrl: document.url,
     document: {
       status: document.status,
       contentType: document.contentType,
       bytes: document.bytes,
+      limit: document.limit,
       truncated: document.truncated,
+      headers: document.reportedHeaders,
       redirects: document.redirects,
     },
   });
+
+  if (!resources) {
+    return metadata;
+  }
+
+  return {
+    ...metadata,
+    resources: await inspectResources(metadata, {
+      signal: documentOptions.signal,
+      fetcher: documentOptions.fetcher,
+      resolveHost: documentOptions.resolveHost,
+    }),
+  };
 };
 
 /* ///////////////////////////////////////////////// */

@@ -29,7 +29,7 @@ metadata.get(
     operationId: 'getMetadata',
     summary: 'Extract metadata',
     description:
-      'Fetches the page and returns everything a search engine or social platform reads: general tags, Open Graph, Twitter Card, mobile and crawler directives.',
+      'Fetches the page and returns everything a search engine or social platform reads: general tags, Open Graph, Twitter Card, mobile and crawler directives. Pass resources=true to also fetch each declared image and report its measured size.',
     responses: {
       200: toJsonResponse('Metadata extracted from the page', Metadata),
       ...RESPONSE_ERRORS,
@@ -38,12 +38,14 @@ metadata.get(
   validate('query', GetMetadataQuery),
   validate('header', ClientHeaders),
   async (ctx) => {
-    const { url } = ctx.req.valid('query');
+    const { resources, url } = ctx.req.valid('query');
     const headers = ctx.req.valid('header');
 
     const payload = await getMetadataByUrl(url, {
+      resources,
       signal: ctx.req.raw.signal,
       userAgent: headers['x-client-user-agent'],
+      acceptLanguage: headers['x-client-accept-language'],
     });
 
     return toResponse(ctx, { status: 200, data: payload });
@@ -75,6 +77,7 @@ metadata.get(
       mode,
       signal: ctx.req.raw.signal,
       userAgent: headers['x-client-user-agent'],
+      acceptLanguage: headers['x-client-accept-language'],
     });
 
     return toResponse(ctx, { status: 200, data: payload });

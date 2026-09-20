@@ -69,13 +69,25 @@ export const StructuredDataIssue = z.object({
 
 export type StructuredDataIssue = z.infer<typeof StructuredDataIssue>;
 
-export const StructuredData = z.object({
-  count: z.number().int().meta({ description: 'Number of application/ld+json blocks' }),
-  valid: z.number().int().meta({ description: 'Blocks that parsed as JSON' }),
-  invalid: z.number().int(),
+/** One application/ld+json block, with the types it declares and its own issues. */
+export const StructuredDataBlock = z.object({
+  format: z.literal('json-ld'),
+  valid: z.boolean().meta({ description: 'The block parsed as JSON' }),
 
-  types: z.array(z.string()),
+  types: z
+    .array(z.string())
+    .meta({ description: 'schema.org types declared in this block, @graph flattened' }),
+
   issues: z.array(StructuredDataIssue),
+});
+
+export type StructuredDataBlock = z.infer<typeof StructuredDataBlock>;
+
+export const StructuredData = z.object({
+  blocks: z.array(StructuredDataBlock).meta({
+    description:
+      'One entry per structured-data block. Counts and the union of types are derived from it, so a block is never confused with a type.',
+  }),
 });
 
 export type StructuredData = z.infer<typeof StructuredData>;
@@ -99,11 +111,6 @@ export const General = z
     viewport: z.string().optional(),
     colorScheme: z.string().optional(),
     formatDetection: z.string().optional(),
-
-    robots: z
-      .string()
-      .optional()
-      .meta({ description: 'Same source as crawler.robots; kept for compatibility' }),
 
     authors: z.array(Author).optional(),
     license: z.string().optional(),
@@ -145,7 +152,6 @@ export const Opengraph = z
     url: z.string().optional(),
     type: z.string().optional(),
     title: z.string().optional(),
-    keywords: z.string().optional(),
     siteName: z.string().optional(),
     determiner: z.string().optional(),
     description: z.string().optional(),
@@ -153,20 +159,10 @@ export const Opengraph = z
     locale: z.string().optional(),
     localeAlternate: z.array(z.string()).optional(),
 
-    image: z.string().optional().meta({ description: 'First item of images, flattened' }),
-    imageAlt: z.string().optional(),
-    images: z.array(OpengraphImage).optional(),
-
-    video: z.string().optional().meta({ description: 'First item of videos, flattened' }),
-    videoType: z.string().optional(),
-    videoWidth: z.number().optional(),
-    videoHeight: z.number().optional(),
-    videoSecureUrl: z.string().optional(),
+    images: z.array(OpengraphImage).optional().meta({
+      description: 'Every og:image in declaration order; the first is the primary one',
+    }),
     videos: z.array(OpengraphMedia).optional(),
-
-    audio: z.string().optional().meta({ description: 'First item of audios, flattened' }),
-    audioType: z.string().optional(),
-    audioSecureUrl: z.string().optional(),
     audios: z.array(OpengraphMedia).optional(),
 
     articleTag: z.array(z.string()).optional(),
@@ -276,21 +272,72 @@ export const Crawler = z
 
 export type Crawler = z.infer<typeof Crawler>;
 
+/* ------- remote resources ------- */
+
+export const RemoteProbeSignal = z.object({
+  url: z.string(),
+  status: z.number().optional(),
+  error: z.string().optional(),
+
+  /** The request ran out of time; the subject is unmeasured, not broken. */
+  timeout: z.boolean().optional(),
+});
+
+export type RemoteProbeSignal = z.infer<typeof RemoteProbeSignal>;
+
+export const RemoteResourceKind = z.enum([
+  'favicon',
+  'touch-icon',
+  'open-graph-image',
+  'twitter-image',
+]);
+
+export type RemoteResourceKind = z.infer<typeof RemoteResourceKind>;
+
+/**
+ * A declared image after it has actually been fetched: real dimensions, real
+ * byte size, real status. `width`/`height` here are measured, unlike the ones a
+ * page declares through og:image:width or a link's sizes attribute.
+ */
+export const RemoteResourceSignal = RemoteProbeSignal.extend({
+  kind: RemoteResourceKind,
+  bytes: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  contentType: z.string().optional(),
+});
+
+export type RemoteResourceSignal = z.infer<typeof RemoteResourceSignal>;
+
 /* ------- root ------- */
+
+export const RedirectHop = z.object({
+  from: z.string(),
+  to: z.string(),
+  status: z.number().int().meta({ description: '301, 302, 303, 307 or 308' }),
+});
+
+export type RedirectHop = z.infer<typeof RedirectHop>;
 
 export const MetadataDocument = z.object({
   status: z.number().int(),
   contentType: z.string(),
 
-  bytes: z
+  bytes: z.number().int().meta({ description: 'Bytes read from the body' }),
+  limit: z
     .number()
     .int()
-    .meta({ description: 'Bytes read from the body, capped by the fetch byte limit' }),
+    .meta({ description: 'Byte ceiling applied to the read; `truncated` is bytes === limit' }),
   truncated: z.boolean(),
 
+  headers: z.record(z.string(), z.string()).meta({
+    description:
+      'Response headers that change how a crawler treats the page, such as x-robots-tag. An allowlist, not the full set.',
+  }),
+
   redirects: z
-    .array(z.string())
-    .meta({ description: 'URLs followed after the requested one, in order' }),
+    .array(RedirectHop)
+    .meta({ description: 'Hops followed after the requested one, in order' }),
 });
 
 export type MetadataDocument = z.infer<typeof MetadataDocument>;
@@ -310,6 +357,11 @@ export const Metadata = z
     twitter: Twitter,
     mobile: Mobile,
     crawler: Crawler,
+
+    resources: z.array(RemoteResourceSignal).optional().meta({
+      description:
+        'Declared images and icons after being fetched and measured. Present only when the request asks for it, since each entry costs a request.',
+    }),
   })
   .meta({ id: 'Metadata' });
 

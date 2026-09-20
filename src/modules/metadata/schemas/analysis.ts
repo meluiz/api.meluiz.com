@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Metadata } from './metadata';
+import { Metadata, RedirectHop, RemoteProbeSignal, RemoteResourceSignal } from './metadata';
 
 /*
  * The analysis response is declared as Zod schemas, with the TypeScript types
@@ -257,37 +257,12 @@ export type DocumentSignals = z.infer<typeof DocumentSignals>;
 export const HttpSignals = z.object({
   status: z.number(),
   headers: z.record(z.string(), z.string()),
-  redirects: z.array(z.string()),
+  redirects: z.array(RedirectHop),
 });
 
 export type HttpSignals = z.infer<typeof HttpSignals>;
 
 /* ------- deep signals ------- */
-
-export const RemoteProbeSignal = z.object({
-  url: z.string(),
-  status: z.number().optional(),
-  error: z.string().optional(),
-
-  /** The request ran out of time; the subject is unmeasured, not broken. */
-  timeout: z.boolean().optional(),
-});
-
-export type RemoteProbeSignal = z.infer<typeof RemoteProbeSignal>;
-
-export const RemoteResourceKind = z.enum(['favicon', 'open-graph-image', 'twitter-image']);
-
-export type RemoteResourceKind = z.infer<typeof RemoteResourceKind>;
-
-export const RemoteResourceSignal = RemoteProbeSignal.extend({
-  kind: RemoteResourceKind,
-  bytes: z.number().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  contentType: z.string().optional(),
-});
-
-export type RemoteResourceSignal = z.infer<typeof RemoteResourceSignal>;
 
 export const RobotsSignals = RemoteProbeSignal.extend({
   /** `null` when no rule applies, which means crawling is allowed by default. */

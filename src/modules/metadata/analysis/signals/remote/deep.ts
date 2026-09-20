@@ -47,7 +47,7 @@ const resourceEntries = (metadata: Metadata) => {
     entries.push({ kind, url });
   };
 
-  add('open-graph-image', metadata.opengraph.image);
+  add('open-graph-image', metadata.opengraph.images?.[0]?.url);
   add('twitter-image', metadata.twitter.image);
 
   for (const icon of (metadata.general.favicons ?? []).slice(0, MAX_FAVICONS)) {

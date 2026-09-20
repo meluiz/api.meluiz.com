@@ -1,6 +1,12 @@
 import type { Dict } from '@motiro/types';
 import type { HTMLElement } from 'node-html-parser';
-import type { Author, General, StructuredData, StructuredDataIssue } from '../../schemas';
+import type {
+  Author,
+  General,
+  StructuredData,
+  StructuredDataBlock,
+  StructuredDataIssue,
+} from '../../schemas';
 import type { ExtractorContext } from '../context';
 
 import { isObject } from '@motiro/guard';
@@ -187,15 +193,17 @@ const extractCharset = (ctx: ExtractorContext) => {
   return /charset=([^;]+)/i.exec(ctx.attribute(httpEquiv, 'content') ?? '')?.[1]?.trim();
 };
 
+/**
+ * One entry per script block. Types and issues stay attached to the block that
+ * produced them: a page with one @graph of three types is not the same thing as
+ * three blocks, and a flat count could not tell them apart.
+ */
 const extractStructuredData = (ctx: ExtractorContext): StructuredData => {
-  const scripts = ctx.scripts('application/ld+json');
-  const types = new Set<string>();
-  const issues: StructuredDataIssue[] = [];
+  const blocks: StructuredDataBlock[] = [];
 
-  let valid = 0;
-  let invalid = 0;
+  for (const script of ctx.scripts('application/ld+json')) {
+    const issues: StructuredDataIssue[] = [];
 
-  for (const script of scripts) {
     let parsed: unknown;
 
     try {
@@ -203,11 +211,20 @@ const extractStructuredData = (ctx: ExtractorContext): StructuredData => {
       // and decoding would turn a literal &quot; inside a JSON string into a quote
       parsed = JSON.parse(script.rawText.trim());
     } catch {
-      invalid += 1;
+      blocks.push({
+        format: 'json-ld',
+        valid: false,
+        types: [],
+        issues: [
+          {
+            severity: 'error',
+            message: 'The JSON-LD block is not valid JSON and could not be parsed.',
+          },
+        ],
+      });
+
       continue;
     }
-
-    valid += 1;
 
     if (!hasSchemaContext(parsed)) {
       issues.push({
@@ -227,6 +244,8 @@ const extractStructuredData = (ctx: ExtractorContext): StructuredData => {
       });
     }
 
+    const types = new Set<string>();
+
     for (const node of nodes) {
       const nodeTypes = typesOf(node);
 
@@ -236,15 +255,11 @@ const extractStructuredData = (ctx: ExtractorContext): StructuredData => {
 
       validateStructuredDataNode(node, nodeTypes, issues);
     }
+
+    blocks.push({ format: 'json-ld', valid: true, types: [...types], issues });
   }
 
-  return {
-    count: scripts.length,
-    valid,
-    invalid,
-    types: [...types],
-    issues,
-  };
+  return { blocks };
 };
 
 const extractAuthors = (ctx: ExtractorContext): Author[] => {
@@ -313,7 +328,6 @@ export const extractGeneral = (ctx: ExtractorContext): General => {
     next: linkUrl('next'),
     language: attr('html', 'lang'),
     charset: extractCharset(ctx),
-    robots: meta('robots'),
     keywords: meta('keywords'),
     generator: meta('generator'),
     license: meta('license'),

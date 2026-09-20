@@ -129,10 +129,11 @@ const documentLanguage: CheckFactory = ({ metadata }) => {
 };
 
 const structuredData: CheckFactory = ({ metadata }) => {
-  const data = metadata.general.structuredData;
-  const count = data?.count ?? 0;
-  const invalid = data?.invalid ?? 0;
-  const issues = data?.issues ?? [];
+  const blocks = metadata.general.structuredData?.blocks ?? [];
+  const count = blocks.length;
+  const invalid = blocks.filter((block) => !block.valid).length;
+  const issues = blocks.flatMap((block) => block.issues);
+  const types = [...new Set(blocks.flatMap((block) => block.types))];
   const errors = issues.filter((issue) => issue.severity === 'error').length;
   const warnings = issues.filter((issue) => issue.severity === 'warning').length;
   const score = count === 0 ? 0 : clamp(1 - (invalid + errors) / count - warnings * 0.1);
@@ -143,7 +144,7 @@ const structuredData: CheckFactory = ({ metadata }) => {
     // JSON-LD is an optional enhancement: its absence leaves the score alone.
     outcome: count === 0 ? 'not-applicable' : outcomeForScore(score),
     score,
-    value: data?.types ?? [],
+    value: types,
     numericValue: count,
     description:
       'Checks for parseable JSON-LD that can help eligible pages appear with enhanced search features.',

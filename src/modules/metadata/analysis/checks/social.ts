@@ -21,7 +21,7 @@ const openGraph: CheckFactory = ({ metadata }) => {
   const required = {
     'og:title': textValue(og.title),
     'og:type': textValue(og.type),
-    'og:image': textValue(og.image),
+    'og:image': textValue(og.images?.[0]?.url),
     'og:url': textValue(og.url),
   };
 
@@ -41,11 +41,11 @@ const openGraph: CheckFactory = ({ metadata }) => {
       })
     : 0;
 
-  const image = textValue(og.image) ?? textValue(og.images?.[0]?.url);
+  const image = textValue(og.images?.[0]?.url);
   const parsedImage = parseHttpUrl(image);
 
   const firstImage = og.images?.[0];
-  const imageAlt = textValue(firstImage?.alt ?? og.imageAlt);
+  const imageAlt = textValue(firstImage?.alt);
   const width = firstImage?.width;
   const height = firstImage?.height;
   const hasDimensions = width !== undefined && height !== undefined;
@@ -174,9 +174,9 @@ const twitter: CheckFactory = ({ metadata }) => {
   const title = textValue(metadata.twitter.title) ?? textValue(metadata.opengraph.title);
   const description =
     textValue(metadata.twitter.description) ?? textValue(metadata.opengraph.description);
-  const image = textValue(metadata.twitter.image) ?? textValue(metadata.opengraph.image);
-  const imageAlt =
-    textValue(metadata.twitter.imageAlt) ?? textValue(metadata.opengraph.imageAlt);
+  const openGraphImage = metadata.opengraph.images?.[0];
+  const image = textValue(metadata.twitter.image) ?? textValue(openGraphImage?.url);
+  const imageAlt = textValue(metadata.twitter.imageAlt) ?? textValue(openGraphImage?.alt);
 
   const missing = [
     !title ? 'title' : null,

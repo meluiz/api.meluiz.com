@@ -164,6 +164,8 @@ const redirectChain: CheckFactory = ({ context, metadata }) => {
     return null;
   }
 
+  // The check reports the chain as text; the structured hops stay in the response
+  const chain = redirects.map((hop) => `${hop.status} → ${hop.to}`);
   const canonical = parseHttpUrl(textValue(metadata.general.url));
   const resolved = parseHttpUrl(metadata.resolvedUrl);
   const aligned = !canonical || compareUrl(canonical, resolved);
@@ -176,7 +178,7 @@ const redirectChain: CheckFactory = ({ context, metadata }) => {
     // No redirect at all is the ideal outcome and earns its weight.
     outcome: outcomeForScore(score),
     score,
-    value: redirects,
+    value: chain,
     numericValue: redirects.length,
     description:
       'Checks redirect depth and whether the final destination matches the canonical URL.',
@@ -193,7 +195,7 @@ const redirectChain: CheckFactory = ({ context, metadata }) => {
     weight: 4,
     confidence: 1,
     source: 'http',
-    evidence: redirects,
+    evidence: chain,
   });
 };
 

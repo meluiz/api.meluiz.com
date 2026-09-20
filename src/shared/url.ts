@@ -2,6 +2,17 @@ const STANDARD_PROTOCOLS = new Set(['http:', 'https:']);
 
 /* ///////////////////////////////////////////////// */
 
+/**
+ * Whether a href is the whole word `undefined` or `null`: a nullish variable
+ * that reached the markup through a template. Never a real link, and resolving
+ * one against the base invents a page, as `href="undefined"` on a site's home
+ * becomes `https://site/undefined`. A path that merely ends in the word, such
+ * as `/undefined`, is left alone.
+ */
+export const isStringifiedNullish = (value: string) => {
+  return /^(?:undefined|null)$/i.test(value);
+};
+
 export const compareUrl = (left?: string | URL | null, right?: string | URL | null) => {
   const comparableLeft = getComparableUrl(left);
   const comparableRight = getComparableUrl(right);
